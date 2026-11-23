@@ -5,6 +5,12 @@ import { createMeetupLink, readMeetupLink, publicPlaza, isMeetupRoom } from '../
 const base='https://club.example/?room=main&unrelated=private#old';
 const fields={kind:'department',title:'도서관에서 만나요',group:'캠퍼스 동아리'};
 
+test('a social meetup preserves its own topic in the invite preview',async()=>{
+  const social={kind:'social',title:'공강에 만나요',group:'두 학과'};
+  const invitation=await createMeetupLink(base,social);
+  assert.deepEqual((await readMeetupLink(invitation)).details,social);
+});
+
 test('an invitation opens in the existing web room and carries only its chosen public details',async()=>{
   const link=await createMeetupLink(base,fields);
   const parsed=await readMeetupLink(link);

@@ -1275,7 +1275,7 @@ function inviteLink() {
   const url=active ? new URL(active.link) : new URL(location.href);
   if(!active){
     url.hash="";
-    decorate(add(b,"button","학과·동아리·스터디 모임 만들기"),"friends").onclick=meetups.form;
+    decorate(add(b,"button","모임 만들기"),"friends").onclick=meetups.form;
   }
   if(navigator.share){
     decorate(add(b,"button","초대 링크 공유"),"invite").onclick=async()=>{

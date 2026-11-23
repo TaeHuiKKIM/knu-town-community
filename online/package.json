@@ -13,7 +13,8 @@
     "check:render": "node check-world-render.mjs",
     "check:chat": "node check-chat-scroll.mjs",
     "check:install": "node check-install.mjs",
-    "check:journeys": "node check-campus-journeys.mjs"
+    "check:journeys": "node check-campus-journeys.mjs",
+    "check:meetup": "node check-meetup.mjs && node check-meetup.mjs --social && node check-lan-social.mjs"
   },
   "dependencies": {
     "@vercel/functions": "3.11.3",

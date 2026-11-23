@@ -149,7 +149,7 @@ async function run(lan,width,height){
     if(!lan){await opened().getByRole('button',{name:'연결 상태',exact:true}).click();await observe('network');}
     await close();await click(lan?'.scene-chip':'#place');await observe('map');await close();
     await click(lan?'[data-open="invite-dialog"]':'#invite');await observe('invite');
-    const create=opened().getByRole('button',{name:/학과·동아리·스터디 모임 만들기/});
+    const create=opened().getByRole('button',{name:'모임 만들기',exact:true});
     if(!lan && await create.count()){await create.click();await observe('meetup');}
     await close();
     if(lan){

@@ -1,6 +1,23 @@
+import {socialTopics} from './social-topics.js';
+
 const $=id=>document.getElementById(id);
+const roomLabels={free:'친구',study:'공부',social:'과팅'};
 export class SpacesUI {
-  constructor({room,art,toast,onHallVisibility}){this.art=art;this.onHallVisibility=onHallVisibility;this.room=room;this.toast=toast;this.busy=false;this.current=null;this.attachHall();$('space-create-form').addEventListener('submit',e=>{e.preventDefault();void this.create();});}
+  constructor({room,art,toast,onHallVisibility}){this.art=art;this.onHallVisibility=onHallVisibility;this.room=room;this.toast=toast;this.busy=false;this.current=null;this.attachHall();this.attachSocialQuestions();$('space-create-form').addEventListener('submit',e=>{e.preventDefault();void this.create();});}
+
+  attachSocialQuestions(){
+    const choices=$('social-question'),send=$('social-send');
+    for(const text of socialTopics)choices.add(new Option(text,text));
+    send.onclick=async()=>{
+      if(this.current?.mode!=='social'||send.disabled)return;
+      send.disabled=true;
+      try{
+        await this.room.send({type:'chat',text:choices.value});
+        $('social-topics').open=false;
+      }catch(error){if(!error.stale)this.toast(error.message);}
+      finally{send.disabled=false;}
+    };
+  }
 
   attachHall(){
     const panel=document.createElement('dialog');
@@ -63,12 +80,12 @@ export class SpacesUI {
       setTimeout(()=>{if(this.inHall&&!this.hallPanel.open&&!document.querySelector('dialog[open]'))this.openHall();},0);
     }
   }
-  accept(info){if(!info)return;this.current=info;$('place-name').textContent=info.name;$('join-title').textContent=info.isMain?'일청담에서 만나':info.name;$('space-current').textContent=info.name;}
+  accept(info){if(!info)return;this.current=info;$('place-name').textContent=info.name;$('join-title').textContent=info.isMain?'일청담에서 만나':info.mode==='social'?'과팅 · '+info.name:info.name;$('space-current').textContent=info.name;$('social-topics').hidden=info.mode!=='social';}
   async info(){try{const r=await fetch(this.room.api+'info');if(r.ok)this.accept((await r.json()).room);}catch{}}
   async load(){
     $('spaces-error').textContent='';
     try{const r=await this.room.service('/api/hub/rooms/list'),list=$('spaces-list');list.replaceChildren();
-      for(const space of r.rooms){const b=document.createElement('button');b.className='space-card';const title=document.createElement('strong'),detail=document.createElement('span');title.textContent=space.name;detail.textContent=`${space.isMain?'메인':space.mode==='study'?'공부':'친구'} · ${space.online}/${space.capacity}명${space.code===this.current?.code?' · 현재':''}`;b.append(title,detail);b.disabled=space.code===this.current?.code;b.addEventListener('click',()=>void this.go(space.code));list.append(b);}
+      for(const space of r.rooms){const b=document.createElement('button');b.className='space-card';const title=document.createElement('strong'),detail=document.createElement('span');title.textContent=space.name;detail.textContent=`${space.isMain?'메인':roomLabels[space.mode]||'친구'} · ${space.online}/${space.capacity}명${space.code===this.current?.code?' · 현재':''}`;b.append(title,detail);b.disabled=space.code===this.current?.code;b.addEventListener('click',()=>void this.go(space.code));list.append(b);}
     }catch(error){$('spaces-error').textContent=error.message;}
   }
   async go(code){if(this.busy)return;this.busy=true;$('spaces-error').textContent='';try{await this.room.transfer(code);}catch(error){$('spaces-error').textContent=error.message;}finally{this.busy=false;}}

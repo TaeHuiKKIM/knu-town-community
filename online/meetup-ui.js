@@ -1,9 +1,11 @@
 import {createMeetupLink,readMeetupLink,publicPlaza,meetupKinds} from './meetup-link.js';
+import {socialTopics} from '../public/campus/social-topics.js';
 
 const prompts={
   department:['우리 과에서 같이 해 보고 싶은 활동은?','이번 학기에 가장 기대되는 수업은?'],
   club:['이번 모임에서 같이 해 보고 싶은 일은?','요즘 관심 있는 취미는?'],
-  study:['오늘 한 가지 마치고 싶은 공부는?','이번에 함께 풀어 보고 싶은 문제는?']
+  study:['오늘 한 가지 마치고 싶은 공부는?','이번에 함께 풀어 보고 싶은 문제는?'],
+  social:socialTopics
 };
 const memoryKey=code=>'knu-meetup-agreement:'+code;
 function remember(code,value) {
@@ -29,6 +31,7 @@ export function campusMeetups({panel,add,invite,dialog,start,stop,connected,post
     const kind=field(form,'모임 종류','select');
     for(const [value,name] of meetupKinds){const option=add(kind,'option',name);option.value=value;}
     const title=field(form,'모임 이름','input',36);title.required=true;title.placeholder='예: 자료구조 같이 공부해요';
+    kind.onchange=()=>{title.placeholder=kind.value==='social'?'예: 공강에 만나는 두 학과':'예: 자료구조 같이 공부해요';};
     const group=field(form,'학교·학과·동아리 별칭 (선택)','input',30);group.placeholder='예: 캠퍼스 독서회';
     add(form,'p','링크를 받은 사람이 모임 정보를 보고 참여를 선택해요. 최대 4명까지 함께할 수 있어요.').className='muted';
     const error=add(form,'p','');error.setAttribute('role','status');

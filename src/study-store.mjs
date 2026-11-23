@@ -110,7 +110,7 @@ export class StudyStore {
   }
   spaces(profileId){return this.db.prepare('SELECT DISTINCT s.* FROM spaces s LEFT JOIN visits v ON v.code=s.code WHERE s.owner_id=? OR v.profile_id=? ORDER BY s.rowid DESC').all(profileId,profileId);}
   createSpace(profileId,{name,mode='free',capacity=16}){
-    name=text(name,1,24,'광장 이름');if(!['free','study'].includes(mode)||!Number.isInteger(capacity)||capacity<2||capacity>16)fail('광장 설정을 확인해주세요.');
+    name=text(name,1,24,'광장 이름');if(!['free','study','social'].includes(mode)||!Number.isInteger(capacity)||capacity<2||capacity>16)fail('광장 설정을 확인해주세요.');
     if(this.db.prepare('SELECT count(*) AS n FROM spaces WHERE owner_id=?').get(profileId).n>=4||this.db.prepare('SELECT count(*) AS n FROM spaces').get().n>=100)fail('지금 만들 수 있는 광장이 모두 찼어요.',409);
     const code=randomUUID().replaceAll('-','');this.db.prepare('INSERT INTO spaces VALUES(?,?,?,?,?)').run(code,name,mode,capacity,profileId);return {code,name,mode,capacity,owner_id:profileId};
   }

@@ -23,6 +23,22 @@ export function localAddresses() {
       .map(a => ({ name, address: a.address })));
 }
 
+function roomInviteUrls(listener, roomCode) {
+  let addresses;
+  if (listener.address === '0.0.0.0' || listener.address === '::') {
+    addresses = localAddresses();
+  } else if (listener.address === '127.0.0.1' || listener.address === '::1') {
+    addresses = [{ name: 'Local preview', address: listener.address }];
+  } else {
+    addresses = [localAddresses().find(entry => entry.address === listener.address)
+      ?? { name: 'LAN', address: listener.address }];
+  }
+  return addresses.map(entry => {
+    const host = entry.address.includes(':') ? `[${entry.address}]` : entry.address;
+    return { ...entry, url: `http://${host}:${listener.port}/r/${roomCode}` };
+  });
+}
+
 export function createStudyServer({ roomCode = randomBytes(12).toString('hex'), now = Date.now, ttl = 45000, onRequest = () => {},hub=false,studyPath=':memory:',tutor=hub?createTutor():null } = {}) {
   const study=hub?new StudyStore(studyPath,{now}):null,rooms=new Map(),transfers=new Map(),metrics={movementBroadcasts:0,framesSent:0,bytesSent:0,maxBufferedBytes:0};
   const outfitRequests=new WeakMap();
@@ -127,14 +143,15 @@ export function createStudyServer({ roomCode = randomBytes(12).toString('hex'), 
       const {players,joins,streams,messages,impacts}=currentRoom,snapshot=()=>currentRoom.snapshot(),broadcast=options=>currentRoom.broadcast(options),remove=session=>currentRoom.remove(session);
       const route = url.pathname.slice(prefix.length);
       if (req.method === 'GET' && route === 'info') {
-        const port = server.address().port;
-        const localOnly=server.address().address==='127.0.0.1';
-        return json(res, 200, { room:currentRoom.info(),urls: localOnly?[{name:'Local preview',address:'127.0.0.1',url:`http://127.0.0.1:${port}/r/${requestedCode}`}]:localAddresses().map(a => ({ ...a, url: `http://${a.address}:${port}/r/${requestedCode}` })) });
+        return json(res, 200, { room: currentRoom.info(), urls: roomInviteUrls(server.address(), requestedCode) });
       }
       if (req.method === 'GET' && route === 'qr') {
         const target = url.searchParams.get('url');
-        const port = server.address().port;
-        const allowed = [...localAddresses().map(a => `http://${a.address}:${port}/r/${requestedCode}`),`http://127.0.0.1:${port}/r/${requestedCode}`];
+        const listener = server.address();
+        const allowed = roomInviteUrls(listener, requestedCode).map(entry => entry.url);
+        if (listener.address === '0.0.0.0' || listener.address === '::') {
+          allowed.push(`http://127.0.0.1:${listener.port}/r/${requestedCode}`);
+        }
         if (!allowed.includes(target)) return json(res, 400, { error: '공유 주소를 확인해주세요.' });
         const svg = await QRCode.toString(target, { type: 'svg', width: 240, margin: 2, color: { dark: '#20352cff', light: '#ffffffff' } });
         res.writeHead(200, { 'Content-Type': 'image/svg+xml' }); return res.end(svg);

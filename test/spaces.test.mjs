@@ -12,6 +12,23 @@ async function fixture(t){
   return {base,server,post,key,join,advance(ms){at+=ms;}};
 }
 
+test('a social plaza keeps its room type on invite join and delivers its icebreaker only to that room',async t=>{
+  const {post,key,join}=await fixture(t);
+  const mainMember=(await join(1)).data;
+  const created=await post('/api/hub/rooms/create',{profileKey:key(1),name:'과팅 광장',mode:'social'});
+  assert.equal(created.status,200);
+  const room=created.data.room;
+  assert.equal(room.mode,'social');
+  const host=(await join(2,room.code)).data,guest=(await join(3,room.code)).data;
+  assert.equal(guest.state.room.mode,'social');
+  const question='공강이 한 시간 생기면 뭐 하고 싶어요?';
+  assert.equal((await post('/api/'+room.code+'/action',{session:host.session,type:'chat',text:question})).status,200);
+  const here=(await post('/api/'+room.code+'/resume',{session:guest.session})).data.state;
+  assert.ok(here.messages.some(message=>message.text===question));
+  const main=(await post('/api/main/resume',{session:mainMember.session})).data.state;
+  assert.ok(!main.messages.some(message=>message.text===question));
+});
+
 test('the LAN main plaza accepts 100 valid distinct spawns; friend plazas are bounded and data/actions stay isolated',async t=>{
   const {post,key,join}=await fixture(t);const a=(await join(1)).data;
   const made=await post('/api/hub/rooms/create',{profileKey:key(1),name:'우리 과 광장',mode:'free',capacity:16});assert.equal(made.status,200);

@@ -1,5 +1,5 @@
 export const meetupKinds = new Map([
-  ['department','학과 모임'], ['club','동아리 모임'], ['study','스터디']
+  ['department','학과 모임'], ['club','동아리 모임'], ['study','스터디'], ['social','과팅']
 ]);
 
 export function isMeetupRoom(code) { return typeof code==='string'&&/^meet-[a-f0-9]{32}$/.test(code); }

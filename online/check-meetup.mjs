@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
 import {localTestWeb} from './local-test-web.mjs';
 const registrations=[];
+const social=process.argv.includes('--social');
 const site=await localTestWeb(body=>registrations.push({room:body.room,name:body.name,leave:!!body.leave}));
 const base=site.base;
 const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH});
@@ -18,8 +19,9 @@ try{
   }
   const host=await participant(1280,'달'), guest=await participant(390,'별'), visitor=await participant(320,'구름');
   await host.goto(base+'/?mode=web');
-  await host.locator('#invite').click();await host.getByRole('button',{name:'학과·동아리·스터디 모임 만들기'}).click();
-  await host.getByLabel('모임 종류').selectOption('study');await host.getByLabel('모임 이름').fill('시험 전에 같이 읽기');
+  await host.locator('#invite').click();await host.getByRole('button',{name:'모임 만들기',exact:true}).click();
+  await host.getByLabel('모임 종류').selectOption(social?'social':'study');
+  await host.getByLabel('모임 이름').fill(social?'공강에 만나요':'시험 전에 같이 읽기');
   await host.getByLabel('학교·학과·동아리 별칭 (선택)').fill('열린 독서회');
   await host.getByRole('button',{name:'모임 만들고 입장'}).click();
   await host.getByRole('button',{name:'모임 초대 링크·QR'}).click();
@@ -30,6 +32,7 @@ try{
   await guest.goto(link);
   await guest.getByRole('heading',{name:'모임 초대',exact:true}).waitFor();
   assert.ok((await guest.locator('#panelbody').textContent()).includes('열린 독서회'));
+  await guest.getByText((social?'과팅':'스터디')+' · 열린 독서회',{exact:true}).waitFor();
   await guest.waitForTimeout(450);
   assert.equal(registrations.filter(r=>r.room===code&&r.name==='별').length,0);
   await guest.getByRole('button',{name:'모임 참여',exact:true}).click();
@@ -40,7 +43,8 @@ try{
   await guest.getByRole('button',{name:'소개 보내기'}).click();
   await host.locator('#log').getByText('별 · 다른 캠퍼스에서 왔어요!',{exact:true}).waitFor();
   await guest.getByRole('button',{name:'질문을 채팅에 보내기'}).click();
-  await host.locator('#log').getByText('별 · 오늘 한 가지 마치고 싶은 공부는?',{exact:true}).waitFor();
+  const firstQuestion=social?'공강이 한 시간 생기면 뭐 하고 싶어요?':'오늘 한 가지 마치고 싶은 공부는?';
+  await host.locator('#log').getByText('별 · '+firstQuestion,{exact:true}).waitFor();
   assert.ok(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await visitor.goto(link);
   await visitor.getByRole('button',{name:'참여하지 않고 광장으로'}).click();
