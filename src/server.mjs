@@ -9,7 +9,7 @@ import { PLAY, canPlay, protectedFromHit, pushDestination } from '../public/camp
 import { StudyStore } from './study-store.mjs';
 import { Room } from './room.mjs';
 import { seats } from './seats.mjs';
-import {sceneInfo,sameScene,arrivalFrom} from '../public/campus/scenes.js';
+import {sceneInfo,sameScene,arrivalFrom,canAttendClass} from '../public/campus/scenes.js';
 import { furnitureSeats, seatApproach, SEAT_REACH } from '../public/campus/furniture.js';
 import { STUDENT_ACTION } from '../public/campus/student-motion.js';
 import { styleForAvatar } from '../public/campus/wardrobe.js';
@@ -315,7 +315,7 @@ export function createStudyServer({ roomCode = randomBytes(12).toString('hex'), 
         case 'class':
           // 수업중 status: only on the IT5 forecourt; leaving the scene ends it.
           if(typeof data.on!=='boolean')return json(res,400,{error:'수업 상태를 다시 골라주세요.'});
-          if(data.on&&(p.campus.scene||'plaza')!=='it')return json(res,409,{error:'수업은 IT대학 융복합관에서만 들을 수 있어요.',code:'CLASS_PLACE'});
+          if(data.on&&!canAttendClass(p.campus.scene))return json(res,409,{error:'수업은 IT대학 융복합관에서만 들을 수 있어요.',code:'CLASS_PLACE'});
           p.inClass=data.on;break;
         case 'playful':
           if(typeof data.enabled!=='boolean')return json(res,400,{error:'장난 설정을 다시 확인해주세요.'});

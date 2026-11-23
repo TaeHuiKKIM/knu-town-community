@@ -56,6 +56,7 @@ export const SCENES={
     canopies:[],ambient:'light'},
 };
 export const sceneInfo=id=>typeof id==='string'&&Object.hasOwn(SCENES,id)?SCENES[id]:null;
+export const canAttendClass=scene=>scene==='it';
 export const sameScene=(a,b)=>(a?.scene||'plaza')===(b?.scene||'plaza');
 export function nearbyPortal(scene,x,y){return sceneInfo(scene)?.portals.filter(p=>Math.hypot(p.x-x,p.y-y)<=78).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0]||null;}
 

@@ -1,5 +1,5 @@
 import {COATS} from "../../public/campus/world.js";
-import {sceneInfo} from "../../public/campus/scenes.js";
+import {sceneInfo,canAttendClass} from "../../public/campus/scenes.js";
 import {campusSeats} from "../campus-seats.js";
 import {sharedCalendar} from "../shared-calendar.js";
 import { createHash } from "node:crypto";
@@ -94,6 +94,7 @@ export default async function rendezvous(req, res) {
           f: a.f,
           w: a.w === true,run:a.w===true && a.run===true,
           scene,
+          inClass:canAttendClass(scene)&&a.inClass===true,
           chair:Number.isInteger(a.chair)&&campusSeats[a.chair]?.scene===scene?a.chair:null,
           seat:
             Number.isInteger(a.seat) && a.seat >= 0 && a.seat < 12

@@ -336,7 +336,7 @@ body,body *{font-family:Pixel,sans-serif!important}
 }
 #panel button:hover:not(:disabled),#panel summary:hover{filter:brightness(1.04)}
 #panel button:disabled,#chat button:disabled{--face:var(--ui-muted);color:#42382d;opacity:1}
-#panel button[aria-pressed=true],#panel button[aria-current=page],#panel .save-look,#invite,#chat button:not(:disabled){
+#class-toggle[aria-pressed=true],#panel button[aria-pressed=true],#panel button[aria-current=page],#panel .save-look,#invite,#chat button:not(:disabled){
   --face:var(--ui-wine);color:#fff5de
 }
 #panel .save-look:disabled{--face:var(--ui-muted);color:#42382d}

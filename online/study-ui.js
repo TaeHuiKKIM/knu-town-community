@@ -5,7 +5,7 @@ import {summary,serializeBackup,parseBackup,MAX_BACKUP_BYTES,remainingOutfitSets
 import {clock,CHECK_MS} from "../public/campus/study-time.js";
 import {dailyStudy,monthKey,renderCalendar} from "../public/campus/study-calendar.js";
 
-export function attachStudy({button,profile,panel,add,onStatus,rankings}){
+export function attachStudy({button,profile,legacyAppearance,panel,add,onStatus,onAppearance,rankings}){
   let book,write,pending=false;
   const dialog=document.getElementById("panel");
   let channel;
@@ -17,9 +17,10 @@ export function attachStudy({button,profile,panel,add,onStatus,rankings}){
     button.textContent=book.active?"공부 중":"공부";
     const month=monthKey();
     onStatus(!!book.active,summary(book.archive),sharing?{month,days:dailyStudy(book.archive.records,month).map(ms=>Math.floor(ms/60000))}:null);
+    onAppearance(book.archive.profile);
   };
   async function read(){
-    write??=await openNotebook(profile);
+    write??=await openNotebook(profile,legacyAppearance);
     publish(await write());
   }
   const refresh=()=>read().catch(()=>{});
@@ -140,4 +141,10 @@ export function attachStudy({button,profile,panel,add,onStatus,rankings}){
   }
   button.onclick=()=>show();
   document.getElementById("records").onclick=()=>show("records");
+  return async appearance=>{
+    try{write??=await openNotebook(profile,legacyAppearance);}
+    catch{onAppearance(appearance);return;}
+    publish(await write({type:"appearance",appearance}));
+    channel?.postMessage(1);
+  };
 }

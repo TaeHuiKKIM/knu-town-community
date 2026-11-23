@@ -14,7 +14,7 @@ import {Ambient} from './ambient.js';
 import {SceneView} from './scene-view.js';
 import {walkingRoute} from './terrain.js';
 import {showSpaceAction,onPortalSurface} from './wayfinding.js';
-import {sameScene,sceneInfo} from './scenes.js';
+import {sameScene,sceneInfo,canAttendClass} from './scenes.js';
 import {furnitureSeats,sceneFurniture,seatedFeetOffset,seatApproach,seatAtPoint,nearbyUse,closestFriend,portalActionLabel} from './furniture.js';
 import {dailyStudy,monthKey,renderCalendar} from './study-calendar.js';
 import {LocalVault} from './local-vault.js';
@@ -715,7 +715,7 @@ setInterval(publishMovement,80);setInterval(()=>void room.probe(),10000);schedul
 
 // 수업중 status lives on the IT5 forecourt only; the server clears it when the student leaves.
 function syncClass(me){
-  const button=$('class-toggle'),here=(me?.campus?.scene||'plaza')==='it',on=!!me?.inClass;
+  const button=$('class-toggle'),here=canAttendClass(me?.campus?.scene),on=!!me?.inClass;
   button.hidden=!here&&!on;button.setAttribute('aria-pressed',String(on));button.textContent=on?'수업중 · 끝내기':'수업 듣기';
   $('player').classList.toggle('in-class',on);
 }

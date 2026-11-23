@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {indexedDB} from "fake-indexeddb";
+import {indexedDB,IDBFactory} from "fake-indexeddb";
 import {initialNotebook,changeNotebook,openNotebook} from "../online/study-notebook.js";
 import {CHECK_MS} from "../public/campus/study-time.js";
 import {summary,serializeBackup} from "../public/campus/local-data.js";
@@ -10,6 +10,29 @@ import {seatApproach,furnitureBlocked} from "../public/campus/furniture.js";
 import {walkable} from "../public/campus/world.js";
 const profile={name:"학생",avatar:"female",coat:"forest"};
 const start={type:"start",subject:"컴퓨터 구조",goal:"캐시 문제 풀이"};
+test("wardrobe saves travel with a web backup and old local appearances migrate only once",async()=>{
+  const oldDb=globalThis.indexedDB;
+  globalThis.indexedDB=new IDBFactory();
+  try{
+    const db=await new Promise(resolve=>{
+      const request=globalThis.indexedDB.open("knu-web-study",1);
+      request.onupgradeneeded=()=>request.result.createObjectStore("study");
+      request.onsuccess=()=>resolve(request.result);
+    });
+    const legacy=initialNotebook(profile);delete legacy.appearanceSaved;
+    await new Promise(resolve=>{const tx=db.transaction("study","readwrite");tx.objectStore("study").put(legacy,"notebook");tx.oncomplete=resolve;});
+    db.close();
+    const look={name:"새 닉네임",avatar:"male",coat:"navy",style:null};
+    const write=await openNotebook(profile,look);
+    assert.equal((await write()).archive.profile.name,look.name);
+    const updated=await write({type:"appearance",appearance:{...look,coat:"cse"}});
+    assert.equal(updated.archive.profile.coat,"cse");
+    const restored=changeNotebook(initialNotebook(profile),{type:"import",text:serializeBackup(updated.archive)});
+    assert.deepEqual(restored.archive.profile,updated.archive.profile);
+    const second=await openNotebook(profile,look);
+    assert.equal((await second()).archive.profile.coat,"cse");
+  }finally{globalThis.indexedDB=oldDb;}
+});
 test("web confirms at most 90 minutes, rejects repeated confirmation and uses LAN rewards",()=>{
   const at=Date.now()-3*CHECK_MS;
   let book=changeNotebook(initialNotebook(profile),start,at);
@@ -20,8 +43,12 @@ test("web confirms at most 90 minutes, rejects repeated confirmation and uses LA
   assert.throws(()=>changeNotebook(book,confirm));
   book=changeNotebook(book,{type:"outfit-box"});
   assert.equal(summary(book.archive).balance,1);
+  const style=summary(book.archive).ownedItemIds.includes("wear-ash")?"female-ash":"female-offshoulder";
+  book=changeNotebook(book,{type:"appearance",appearance:{name:"독서",avatar:"female",coat:"cse",style}});
   const imported=changeNotebook(initialNotebook(profile),{type:"import",text:serializeBackup(book.archive)});
   assert.deepEqual(imported.archive.records,book.archive.records);
+  assert.deepEqual(imported.archive.profile,book.archive.profile);
+  assert.equal(summary(imported.archive).balance,1);
 });
 test("competing tabs confirm one record and reopening retains it",async()=>{
   globalThis.indexedDB=indexedDB;

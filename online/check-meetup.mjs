@@ -1,31 +1,11 @@
 // Serve the actual built app and its rendezvous handler on loopback.
 // Vercel's runtime package falls back to its process-local cache for this check.
 import assert from 'node:assert/strict';
-import http from 'node:http';
-import {readFile} from 'node:fs/promises';
 import {chromium} from 'playwright-core';
-import rendezvous from './api/rendezvous.mjs';
-const dist=new URL('./dist/',import.meta.url);
+import {localTestWeb} from './local-test-web.mjs';
 const registrations=[];
-const server=http.createServer(async(req,res)=>{
-  try {
-    const pathname=new URL(req.url,'http://localhost').pathname;
-    if(pathname==='/api/rendezvous'&&req.method==='POST'){
-      let body='';for await(const chunk of req)body+=chunk;
-      req.body=JSON.parse(body);
-      registrations.push({room:req.body.room,name:req.body.name,leave:!!req.body.leave});
-      res.status=code=>{res.statusCode=code;return res;};
-      res.json=data=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};
-      await rendezvous(req,res);return;
-    }
-    const path=pathname.slice(1)||'index.html';
-    if(!/^[a-z0-9./_-]+$/i.test(path)||path.includes('..'))throw Error('Invalid path');
-    const bytes=await readFile(new URL(path,dist));
-    const mime={html:'text/html',js:'text/javascript',css:'text/css',png:'image/png',woff2:'font/woff2'};
-    res.setHeader('Content-Type',mime[path.split('.').at(-1)]||'application/octet-stream');res.end(bytes);
-  }catch{if(!res.headersSent)res.writeHead(404);res.end();}
-});
-await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+const site=await localTestWeb(body=>registrations.push({room:body.room,name:body.name,leave:!!body.leave}));
+const base=site.base;
 const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH});
 try{
   const faults=[];
@@ -90,4 +70,4 @@ try{
   await visitor.waitForFunction(()=>document.querySelector('#network').textContent==='친구 3명');
   assert.deepEqual(faults,[]);
   console.log('Desktop creator, mobile guest, 320px visitor: create/share QR/preview/consent, real room chat and prompt, decline, altered link, refresh, leave/re-consent, 4 participants, 5th waits and fills a vacated seat passed.');
-}finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+}finally{await browser.close();await site.close();}

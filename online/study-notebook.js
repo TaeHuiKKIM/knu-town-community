@@ -1,10 +1,11 @@
 import {CHECK_MS} from "../public/campus/study-time.js";
-import {createState, mergeRecords, mergeStates, parseBackup, openSeedBox, purchase, setFocusTheme} from "../public/campus/local-data.js";
+import {createState, mergeRecords, mergeStates, parseBackup, openSeedBox, purchase, setFocusTheme, summary, updateAppearance} from "../public/campus/local-data.js";
+import {canWearStyle} from "../public/campus/wardrobe.js";
 
 const uuid=()=>crypto.randomUUID();
 const command=()=>uuid().replaceAll("-","");
 export function initialNotebook(profile) {
-  return {archive:createState({key:command()+command(),name:profile.name,avatar:profile.avatar,coat:profile.coat}), active:null};
+  return {archive:createState({key:command()+command(),name:profile.name,avatar:profile.avatar,coat:profile.coat}),active:null,appearanceSaved:true};
 }
 export function changeNotebook(book, op, now=Date.now()) {
   let {archive,active}=book;
@@ -22,6 +23,8 @@ export function changeNotebook(book, op, now=Date.now()) {
       fromAt:active.from,toAt:Math.min(now,active.from+CHECK_MS),confirmedAt:now};
     archive={...archive,records:mergeRecords(archive.records,[record])};
     active=op.more?{...active,segment:uuid(),from:now}:null;
+  }else if(op.type==="appearance"){
+    archive=updateAppearance(archive,op.appearance);
   }else if(op.type==="import"){
     if(active)throw Error("진행 중인 구간을 확인한 뒤 가져와주세요.");
     const incoming=parseBackup(op.text);
@@ -38,10 +41,10 @@ export function changeNotebook(book, op, now=Date.now()) {
     if(item!=="plain"&&!archive.purchases.some(p=>p.itemId===item))archive=purchase(archive,{id:command(),itemId:item,at:now});
     archive=setFocusTheme(archive,op.theme);
   }else throw Error("공부 동작을 확인해주세요.");
-  return {archive:{...archive,revision:archive.revision+1,updatedAt:now},active};
+  return {...book,archive:{...archive,revision:archive.revision+1,updatedAt:now},active};
 }
 
-export async function openNotebook(profile){
+export async function openNotebook(profile,legacyAppearance){
   const db=await new Promise((resolve,reject)=>{
     const req=indexedDB.open("knu-web-study",1);
     req.onupgradeneeded=()=>req.result.createObjectStore("study");
@@ -54,9 +57,22 @@ export async function openNotebook(profile){
     let result,error;
     req.onsuccess=()=>{
       try{
-        const current=req.result||initialNotebook(profile);
+        let current=req.result||initialNotebook(profile);
+        const migrate=!current.appearanceSaved;
+        if(migrate){
+          let archive=current.archive;
+          if(legacyAppearance){
+            const {avatar,style}=legacyAppearance;
+            const totals=summary(archive);
+            const unlocked=canWearStyle(style,avatar,totals.rewardMs,totals.ownedItemIds);
+            // A damaged legacy preference must not block an otherwise valid study notebook.
+            try{archive=updateAppearance(archive,{...legacyAppearance,style:unlocked?style:null});}
+            catch{ /* Keep the validated archive profile. */ }
+          }
+          current={...current,archive,appearanceSaved:true};
+        }
         result=op?changeNotebook(current,op):current;
-        if(op||!req.result)store.put(result,"notebook");
+        if(op||!req.result||migrate)store.put(result,"notebook");
       }catch(e){error=e;tx.abort();}
     };
     tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(error||tx.error||Error("기록을 저장하지 못했어요."));

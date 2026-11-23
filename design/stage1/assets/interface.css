@@ -43,12 +43,85 @@ body.campus-game .bottom-dock .dock-button span{font-size:14px;font-weight:700;l
 #check-dialog{--panel-art:url(icons/dock-records.png)}
 #panel[data-mode="seats"]{--panel-art:url(icons/library-desk.png)}
 
+/* The title and body share one paper surface. Keep the earlier pixel frame
+   at the outside edge, without a second frame around the title. */
+body.campus-game dialog,#panel{border-width:2px;padding:0}
+dialog{
+  --window-title:#f2eadb;--window-ink:#3e342c;
+  --scroll-thumb:#786955;--scroll-track:#f4ead7;
+}
+#study-dialog,#check-dialog,#panel[data-mode="study"]{
+  --window-title:#ebeedd;
+}
+#local-dialog,#friend-calendar-dialog,#panel[data-mode="study"][data-section="records"]:has(.study-notebook){
+  --window-title:#f5ebd7;
+}
+#wardrobe-dialog,#panel[data-mode="profile"]{
+  --window-title:#f4e7e3;
+}
+#local-dialog:has(#local-tab-themes[aria-selected="true"]),#panel[data-mode="study"][data-section="shop"]:has(.study-notebook){
+  --window-title:#f6e7d9;
+}
+#people-dialog,#panel[data-mode="friends"]{
+  --window-title:#e8ede9;
+}
+#scene-dialog,#spaces-dialog,#panel[data-mode="directions"]{
+  --window-title:#e8eee3;
+}
+#seat-dialog,.reading-panel,#panel[data-mode="seats"]{
+  --window-title:#f1ecda;
+}
+#tutor-dialog{
+  --window-title:#efe9ec;
+}
+#invite-dialog,#panel[data-mode="invite"]{
+  --window-title:#eff0df;
+}
+#chat-dialog{
+  --window-title:#e6ede5;
+}
+#panel:is([data-mode="network"],[data-mode="report"]){
+  --window-title:#e9ece8;
+}
+#gesture-dialog,#panel[data-mode="action"]{
+  --window-title:#f4e8da;
+}
+#join-dialog,#study-delete-dialog{
+  --window-title:#f2e7db;
+}
+#panel:is([data-mode="meetup"],[data-mode^="meetup-"]){
+  --window-title:#ebebeb;
+}
 /* Modal actions stay in one sticky header, above the scrolling panel content. */
 body.campus-game dialog .dialog-head,#panel .panel-head{
   position:sticky;top:0;z-index:2;isolation:isolate;
   display:flex;align-items:center;justify-content:space-between;
   min-height:52px;gap:var(--control-gap);padding:4px var(--panel-gutter);
-  box-sizing:border-box;background:var(--campus-surface);color:var(--campus-ink);
+  box-sizing:border-box;background:var(--window-title);color:var(--window-ink);
+  margin:0;border:0;border-image:none;border-radius:0;box-shadow:none;
+}
+body.campus-game dialog .dialog-head :is(h1,h2),#panel .panel-head h2{
+  color:inherit;background:none;border:0;border-radius:0;box-shadow:none;
+}
+body.campus-game dialog .dialog-head :focus-visible,#panel .panel-head :focus-visible{
+  outline:2px solid var(--window-ink);outline-offset:-2px;
+}
+/* Native scroll controls preserve wheel, touch, keyboard and system settings. */
+dialog,dialog :where(.dialog-body,#panelbody,.seat-scroll,.messages,.people,.rank-list,.reading-seats,
+                     .local-history,.tutor-log,.tutor-code,textarea){
+  scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track);
+}
+@supports not (scrollbar-width:thin){
+  dialog::-webkit-scrollbar,dialog ::-webkit-scrollbar{width:6px;height:6px}
+  dialog::-webkit-scrollbar-track,dialog ::-webkit-scrollbar-track{background:var(--scroll-track)}
+  dialog::-webkit-scrollbar-thumb,dialog ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:3px}
+}
+@media(forced-colors:active){
+  body.campus-game dialog .dialog-head,#panel .panel-head{
+    background:Canvas;color:CanvasText;
+  }
+  body.campus-game dialog .dialog-head :focus-visible,#panel .panel-head :focus-visible{outline-color:Highlight}
+  dialog,dialog *{scrollbar-width:auto;scrollbar-color:auto}
 }
 body.campus-game dialog .dialog-body,#panel #panelbody{
   padding:4px var(--panel-gutter) var(--panel-gutter);min-width:0;

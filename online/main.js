@@ -10,7 +10,7 @@ import {showSpaceAction,createPortal,onPortalSurface,drawEntrance, signOffset, s
 import { selectStudentFrame, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
 import { ImageCache } from "../public/campus/scene-images.js";
 import { addInstallOption } from "./install.js";
-import { SCENES, sceneInfo, nearbyPortal, arrivalFrom } from "../public/campus/scenes.js";
+import { SCENES, sceneInfo, nearbyPortal, arrivalFrom, canAttendClass } from "../public/campus/scenes.js";
 import { gateRoute } from "./gate-route.js";
 import {attachStudy} from "./study-ui.js";
 import {COAT_LABELS,STUDY_STYLES,canWearStyle,outfitName,styleForAvatar} from "../public/campus/wardrobe.js";
@@ -41,9 +41,11 @@ const webMode = meetupRoom || new URL(location.href).searchParams.get("mode") ==
 const peers = new Map(),
   keys = new Set(),
   images = new Map();
+let legacyAppearance;
 let self = {
   ...spawn(0),
   seat: null,
+  inClass: false,
   crouch: false,
   action: "",
   seq: 0,
@@ -59,6 +61,7 @@ try {
     if(styleForAvatar(p.style,p.avatar))self.style=p.style;
     if (AVATARS.includes(p.avatar)) self.avatar = p.avatar;
     if (COATS.includes(p.coat)) self.coat = p.coat;
+    legacyAppearance={name:self.name,avatar:self.avatar,coat:self.coat,style:self.style||null};
   }
 } catch {}
 try {
@@ -253,7 +256,8 @@ function beginGate(gate,now) {
 function crossGate(gate,image) {
   const scene=gate.target, arrival=arrivalFrom(self.scene,scene);
   displayBackdrop(scene,image);
-  Object.assign(self,arrival,{scene,action:"",crouch:false});
+  Object.assign(self,arrival,{scene,action:"",crouch:false,inClass:false});
+  syncClassControl();
   stopRoute();keys.clear();resetStick();wasWalking=false;
   $("seat-list").hidden=scene!=="lounge";
   const placeName=scene==="lounge"?"도서관 열람실":SCENES[scene].name;
@@ -408,7 +412,21 @@ function log(text) {
   while ($("log").children.length > 25) $("log").firstChild.remove();
   if(atEnd)feed.scrollTop=feed.scrollHeight;
 }
+function syncClassControl(){
+  const button=$("class-toggle");
+  button.hidden=!canAttendClass(self.scene);
+  button.disabled=!slot||!mesh.active;
+  button.setAttribute("aria-pressed",String(self.inClass));
+  button.textContent=self.inClass?"수업중 · 끝내기":"수업 듣기";
+}
+$("class-toggle").onclick=()=>{
+  if(!canAttendClass(self.scene)||!slot||!mesh.active||opening)return;
+  self.inClass=!self.inClass;
+  syncClassControl();
+  announcePose();
+};
 function controls() {
+  syncClassControl();
   $("network").textContent = slot
     ? "친구 " + mesh.links.size + "명"
     : "연결 상태";
@@ -431,6 +449,7 @@ function currentPose() {
   return {
     t: "pose",
     scene: self.scene,
+    inClass:self.inClass,
     playful,bumpSlot:self.action==="bump"?self.bumpSlot:null,calendar:sharedCalendar(self.calendar),chair:self.seat,seat:null,studying:!!self.studying,style:self.style||null,
     crouch: self.crouch,
     seq: self.seq,
@@ -499,6 +518,7 @@ const mesh = new PlazaMesh(
           slot:i,moves,playful:d.playful!==false,calendar:sharedCalendar(d.calendar),studying:d.studying===true,style:styleForAvatar(d.style,d.avatar)?d.style:null,
           seatedAt:previous && previous.seat === (d.chair ?? null) ? previous.seatedAt : performance.now(),
           scene,
+          inClass:canAttendClass(scene)&&d.inClass===true,
           seat:
             seatedPose ? d.chair : null,
           crouch: d.crouch === true,
@@ -689,7 +709,7 @@ function paint(now) {
       ctx.drawImage(emote,center-17,feet-height-(bubbles.has(p===self?"me":p.slot)?83:59)-rise,34,34);
     }
     const label =
-      (p.studying?"공부 중 · ":"")+p.name +
+      (p.studying?"공부 중 · ":"")+p.name +(p.inClass?" · 수업중":"")+
       (p === self ? " · 나" : "");
     const width = ctx.measureText(label).width + 20;
     drawPlate(p===self?"name-own":"name-friend",center,feet-height-27,width,27);
@@ -1049,26 +1069,13 @@ $("profile").onclick = () => {
   name.oninput=updateSave;
   renderChoices();
   name.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing&&e.keyCode!==229){e.preventDefault();save.click();}};
-  save.onclick = () => {
+  save.onclick = async () => {
     if (!name.value.trim() || !canWearStyle(draft.style||null,draft.avatar,rewardMs,owned)) return;
-    Object.assign(self, {
-      name: name.value.trim(),
-      avatar:draft.avatar,coat:draft.coat,style:draft.style||null,
-    });
-    try {
-      localStorage.setItem(
-        "knu-web-profile",
-        JSON.stringify({
-          name: self.name,
-          avatar: self.avatar,
-          coat: self.coat,style:self.style,
-        }),
-      );
-    } catch {}
-    sendPose();
-    mesh.maintain();
-    controls();
-    $("panel").close();
+    save.disabled=true;
+    try{
+      await saveAppearance({name:name.value.trim(),avatar:draft.avatar,coat:draft.coat,style:draft.style||null});
+      $("panel").close();
+    }catch(error){itemState.textContent=error.message;updateSave();}
   };
   const settings=add(b,"details","");settings.className="effect-options";
   add(settings,"summary","화면 설정 · 문의");
@@ -1176,7 +1183,7 @@ function renderFriends(){
   for(const i of mesh.links.keys())if(!members.has(i))members.set(i,{slot:i,name:peers.get(i)?.name||i+"번 친구"});
   const entries=Array.from(members.values(),member=>{
     const friend=peers.get(member.slot);
-    return {slot:member.slot,calendar:sharedCalendar(friend?.calendar),name:friend?.name||member.name,scene:friend?.scene,seat:friend?.seat,
+    return {slot:member.slot,calendar:sharedCalendar(friend?.calendar),name:friend?.name||member.name,scene:friend?.scene,seat:friend?.seat,inClass:friend?.inClass,
       beside:friend?.seat!=null && adjacentSeat(friend.seat)!==undefined};
   });
   const signature=JSON.stringify([self.scene,self.seat,!!opening,entries]);
@@ -1191,7 +1198,7 @@ function renderFriends(){
     const info=add(row,"div","");
     add(info,"strong",entry.name);
     const place=entry.scene==="lounge"?"도서관 열람실":SCENES[entry.scene]?.name;
-    add(info,"small",place ? place+(entry.seat!=null?" · "+seatLabel(entry.seat):"") : "연결 중");
+    add(info,"small",place ? place+(entry.seat!=null?" · "+seatLabel(entry.seat):"")+(entry.inClass?" · 수업중":"") : "연결 중");
     if(entry.calendar){
       const details=add(info,"details","");add(details,"summary","공부 달력");
       const view=add(details,"div","");
@@ -1259,7 +1266,14 @@ function inviteLink() {
     location.assign(url.href);
   };
 }
-attachStudy({button:$("study"),profile:self,panel,add,rankings:()=>[self,...peers.values()]
+const saveAppearance=attachStudy({button:$("study"),profile:self,legacyAppearance,panel,add,onAppearance:appearance=>{
+  const {name,avatar,coat}=appearance,style=appearance.style||null;
+  if(name===self.name&&avatar===self.avatar&&coat===self.coat&&style===(self.style||null))return;
+  const look={name,avatar,coat,style};
+  Object.assign(self,look);
+  try{localStorage.setItem("knu-web-profile",JSON.stringify(look));}catch{}
+  sendPose();mesh.maintain();controls();
+},rankings:()=>[self,...peers.values()]
   .filter(p=>sharedCalendar(p.calendar))
   .map(p=>({name:p.name,minutes:p.calendar.days.reduce((sum,n)=>sum+n,0)}))
   .sort((a,b)=>b.minutes-a.minutes),onStatus:(studying,totals,calendar)=>{

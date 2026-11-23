@@ -6,7 +6,9 @@
     "build": "node build.mjs",
     "check": "node check-plaza.mjs",
     "check:mobile": "node check-mobile-ui.mjs",
+    "check:windows": "node check-window-themes.mjs",
     "check:input": "node check-campus-input.mjs",
+    "check:class": "node check-class.mjs",
     "check:install": "node check-install.mjs",
     "check:journeys": "node check-campus-journeys.mjs"
   },
