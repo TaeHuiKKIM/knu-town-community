@@ -444,3 +444,12 @@ label[for="edit-nickname"]{display:block;font-size:13px;font-weight:700}
 .study-notebook [role=status]{white-space:pre-line}
 
 #web-scene-art{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}#scene-art-retry{position:absolute;z-index:12;left:50%;top:12px;transform:translateX(-50%);min-height:44px}#scene-art-retry[hidden]{display:none}
+
+.meetup-form,.meetup-activities{display:grid;gap:12px;min-width:0}
+.meetup-field{display:grid;gap:5px;font-weight:700}
+.meetup-field input,.meetup-field select{box-sizing:border-box;width:100%;min-width:0;padding:8px;min-height:44px;font:inherit}
+.meetup-kind{margin:0;color:#67423f;font-size:.9rem}
+.meetup-title{margin:.3em 0 .75em;overflow-wrap:anywhere}
+.meetup-form .muted,.meetup-activities h3,.meetup-activities [role=status]{margin:0}
+.meetup-activities{padding:12px 0;border-top:1px solid #cfb99b}
+.meetup-activities [role=status]:empty,.meetup-form [role=status]:empty{display:none}

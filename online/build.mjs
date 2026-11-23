@@ -27,6 +27,11 @@ await build({
   target: "es2020",
 });
 const files = {
+  "app.webmanifest":"app.webmanifest",
+  "app-icon-180.png":"app-icon-180.png",
+  "app-icon-192.png":"app-icon-192.png",
+  "app-icon-512.png":"app-icon-512.png",
+  "sw.js":"sw.js",
   "../design/stage1/assets/campus-warp.png":"campus-warp.png",
   "../design/stage1/assets/campus-wayfinding.png": "wayfinding.png",
   "../design/stage1/assets/campus-bench.png":"campus-bench.png",

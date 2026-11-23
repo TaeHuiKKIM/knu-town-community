@@ -25,7 +25,7 @@ function candidates(sdp = "") {
     .map((line) => line.slice(2));
 }
 export class PlazaMesh {
-  constructor(room, events, web = false) {
+  constructor(room, events, web = false, autoStart = true) {
     this.web = web;
     this.chats = [];
     this.seq = 0;
@@ -39,9 +39,14 @@ export class PlazaMesh {
     this.lastProbe = new Map();
     this.roster = [];
     this.mail = {};
-    this.active = true;
-    this.timer = setTimeout(() => this.sync(), 0);
+    this.active = false;
     this.wake = () => this.maintain();
+    if(autoStart)this.start();
+  }
+  start() {
+    if(this.active)return;
+    this.active=true;
+    this.timer=setTimeout(()=>this.sync(),0);
     window.addEventListener("online", this.wake);
     document.addEventListener("visibilitychange", this.wake);
   }
@@ -362,6 +367,7 @@ export class PlazaMesh {
     }
   }
   close() {
+    if(!this.active)return;
     this.active = false;
     clearTimeout(this.timer);
     window.removeEventListener("online", this.wake);

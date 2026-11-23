@@ -13,9 +13,19 @@ const b = await chromium.launch({
   headless: true,
 });
 const pages = [];
-async function enter(name) {
+async function enter(name,roomUrl=url) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch:true });
   pages.push(p);
+  // Observe displayed remote positions without reading local actor or transport state.
+  await p.addInitScript(()=>{
+    const prototype=CanvasRenderingContext2D.prototype,draw=prototype.fillText;
+    const displayed=new Map();
+    window.qaDisplayedX=name=>displayed.get(name);
+    prototype.fillText=function(label,x,y,...rest){
+      if(this.canvas.id==="world")displayed.set(label,x);
+      return draw.call(this,label,x,y,...rest);
+    };
+  });
   if (web)
     await p.addInitScript(() => {
       window.RTCPeerConnection = class {
@@ -48,7 +58,7 @@ async function enter(name) {
       console.error("socketerror", name, String(e).slice(0, 60)),
     );
   });
-  await p.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+  await p.goto(roomUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await p.locator("#profile").click();
   await p.getByRole("textbox", { name: "닉네임" }).fill(name);
   await p.getByRole("button", { name: "저장", exact: true }).click();
@@ -70,6 +80,38 @@ async function chat(from, to, msg) {
   await from.locator("#message").fill(msg);
   await from.getByRole("button", { name: "보내기" }).click();
   await to.getByText(msg, { exact: false }).last().waitFor();
+}
+async function walkSeenBy(from, receivers, name) {
+  await Promise.all(receivers.map(peer=>peer.waitForFunction(label=>Number.isFinite(window.qaDisplayedX(label)),name)));
+  const start=await Promise.all(receivers.map(peer=>peer.evaluate(label=>window.qaDisplayedX(label),name)));
+  await from.locator("#world").focus();
+  for(const key of ["ArrowRight","ArrowLeft"]){
+    await from.keyboard.down(key);
+    try{await from.waitForTimeout(360);}finally{await from.keyboard.up(key);}
+    try{
+      await Promise.all(receivers.map((peer,index)=>peer.waitForFunction(
+        ([label,x])=>Math.abs(window.qaDisplayedX(label)-x)>7,[name,start[index]],{timeout:6500}
+      )));
+      return;
+    }catch(error){if(key==="ArrowLeft")throw error;}
+  }
+}
+async function leaveRoom(page){
+  if(page.isClosed())return;
+  const left=page.waitForResponse(response=>response.url().endsWith("/api/rendezvous") &&
+    response.request().postDataJSON()?.leave===true && response.ok(),{timeout:5000}).catch(()=>null);
+  await page.goto("about:blank",{waitUntil:"commit"}).catch(()=>{});
+  await left;
+  await page.close();
+}
+async function walkToOpenGround(page){
+  const jump=page.locator("#quick-jump[data-action=점프]");
+  for(const direction of ["ArrowLeft","ArrowDown","ArrowRight","ArrowUp"]){
+    if(await jump.isVisible())return;
+    await page.keyboard.down(direction);
+    try{await jump.waitFor({timeout:600});}catch{}finally{await page.keyboard.up(direction);}
+  }
+  await jump.waitFor();
 }
 async function followSign(page,destination){
   const sign=page.locator('#gates [data-to="'+destination+'"]');
@@ -105,13 +147,11 @@ async function checkLibrary(a, b) {
     await sheet.decode();
   });
   await a.locator("#world").focus();
-  await a.keyboard.down("ArrowLeft");
-  await a.waitForTimeout(1100);
-  await a.keyboard.up("ArrowLeft");
+  await walkToOpenGround(a);
   await a.locator("#act").click();
   await a.locator(".close").click();
   await a.keyboard.press("ArrowLeft");
-  await a.locator("#quick-jump[data-action=점프]").waitFor();
+  await walkToOpenGround(a);
   await a.keyboard.press("Space");
   await a.locator("#world[data-jump-observed=true]").waitFor();
   await followSign(a,"lounge");
@@ -283,6 +323,58 @@ async function checkPresence() {
     "Two visible room members, zero direct channels with ICE disabled",
   );
 }
+async function checkHandoff(roomUrl){
+    const a = await enter("첫번째",roomUrl),
+      c = await enter("두번째",roomUrl),
+      d = await enter("세번째",roomUrl);
+    for (const p of [a, c, d]) await count(p, 2);
+    await d.locator("#network").click();
+    await d.getByRole("button",{name:"연결 상태",exact:true}).click();
+    await d.waitForFunction(
+      route =>
+        [...document.querySelectorAll("#panelbody li")].length === 2 &&
+        [...document.querySelectorAll("#panelbody li")].every((el) =>
+          el.textContent.includes(route),
+        ), web?"HTTPS":"host ↔ host",
+    );
+    console.log(
+      "3 connected",
+      await d.locator("#panelbody li").allTextContents(),
+    );
+    await d.locator(".close").click();
+    await walkSeenBy(a,[c,d],"첫번째");
+    await leaveRoom(a);
+    await Promise.all([count(c, 1), count(d, 1)]);
+    await chat(c, d, "퇴장 뒤 대화 확인");
+    await chat(d, c, "응답 확인");
+    await walkSeenBy(c,[d],"두번째");
+    await walkSeenBy(d,[c],"세번째");
+    await c.locator("header strong").click();
+    await c.keyboard.down("ArrowLeft");
+    await c.waitForTimeout(500);
+    await c.keyboard.up("ArrowLeft");
+    await d.locator("#network").click();
+    await d.getByRole("button",{name:"연결 상태",exact:true}).click();
+    await d.waitForFunction(() =>
+      [...document.querySelectorAll("#panelbody li")].some((el) =>
+        /이동 수신 [1-9]/.test(el.textContent),
+      ),
+    );
+    console.log(
+      "survivor movement",
+      await d.locator("#panelbody li").allTextContents(),
+    );
+    await d.locator(".close").click();
+    if(!web)await checkLibrary(c,d);
+    const e = await enter("새친구",roomUrl);
+    for (const p of [c, d, e]) await count(p, 2);
+    await chat(e, c, "새 참가자 인사");
+    await chat(c, e, "새 참가자 수신");
+    await d.getByText("새친구 · 새 참가자 인사",{exact:true}).last().waitFor();
+    await walkSeenBy(e,[c,d],"새친구");
+    await walkSeenBy(d,[c,e],"세번째");
+    console.log("Three peers, first departure, both survivor directions, fourth join and remote motion verified");
+}
 try {
   if (web) {
     const [a, c] = await Promise.all([
@@ -328,53 +420,12 @@ try {
     console.log(
       "HTTPS-only simultaneous entry, rename, remote motion and two-way chat verified",
     );
+    await Promise.all([leaveRoom(a),leaveRoom(c)]);
+    const next=new URL(url);
+    next.searchParams.set("room",next.searchParams.get("room")+"-handoff");
+    await checkHandoff(next.href);
   } else if (process.env.PLAZA_CHECK_NO_ICE === "1") await checkPresence();
-  else {
-    const a = await enter("첫번째"),
-      c = await enter("두번째"),
-      d = await enter("세번째");
-    for (const p of [a, c, d]) await count(p, 2);
-    await d.locator("#network").click();
-    await d.getByRole("button",{name:"연결 상태",exact:true}).click();
-    await d.waitForFunction(
-      () =>
-        [...document.querySelectorAll("#panelbody li")].length === 2 &&
-        [...document.querySelectorAll("#panelbody li")].every((el) =>
-          el.textContent.includes("host ↔ host"),
-        ),
-    );
-    console.log(
-      "3 connected",
-      await d.locator("#panelbody li").allTextContents(),
-    );
-    await d.locator(".close").click();
-    await a.close();
-    await Promise.all([count(c, 1), count(d, 1)]);
-    await chat(c, d, "퇴장 뒤 대화 확인");
-    await chat(d, c, "응답 확인");
-    await c.locator("header strong").click();
-    await c.keyboard.down("ArrowLeft");
-    await c.waitForTimeout(500);
-    await c.keyboard.up("ArrowLeft");
-    await d.locator("#network").click();
-    await d.getByRole("button",{name:"연결 상태",exact:true}).click();
-    await d.waitForFunction(() =>
-      [...document.querySelectorAll("#panelbody li")].some((el) =>
-        /이동 수신 [1-9]/.test(el.textContent),
-      ),
-    );
-    console.log(
-      "survivor movement",
-      await d.locator("#panelbody li").allTextContents(),
-    );
-    await d.locator(".close").click();
-    await checkLibrary(c, d);
-    const e = await enter("새친구");
-    for (const p of [c, d, e]) await count(p, 2);
-    await chat(e, c, "새 참가자 인사");
-    await chat(c, e, "새 참가자 수신");
-    console.log("departure, survivor chat, fourth join verified");
-  }
+  else await checkHandoff(url);
 } catch (err) {
   for (const p of pages.filter((p) => !p.isClosed()))
     console.log(
@@ -384,5 +435,6 @@ try {
     );
   throw err;
 } finally {
+  await Promise.all(pages.filter(page=>!page.isClosed()).map(leaveRoom));
   await b.close();
 }

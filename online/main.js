@@ -9,6 +9,7 @@ import {tables,chairs as libraryChairs,drawFurniture,drawChair} from "./lounge.j
 import {showSpaceAction,createPortal,onPortalSurface,drawEntrance, signOffset, signFace, exitCameraX, doorOffset} from "../public/campus/wayfinding.js";
 import { selectStudentFrame, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
 import { ImageCache } from "../public/campus/scene-images.js";
+import { addInstallOption } from "./install.js";
 import { SCENES, sceneInfo, nearbyPortal, arrivalFrom } from "../public/campus/scenes.js";
 import { gateRoute } from "./gate-route.js";
 import {attachStudy} from "./study-ui.js";
@@ -17,6 +18,8 @@ import {seatedFeetOffset,seatApproach,seatAtPoint,nearbyUse,closestFriend,portal
 import {benches,campusSeats as desks} from "./campus-seats.js";
 let rewardMs=0, owned=[];
 import QRCode from "qrcode";
+import {isMeetupInvite} from "./meetup-link.js";
+import {campusMeetups} from "./meetup-ui.js";
 import { PlazaMesh } from "./mesh.js";
 import {
   spawn,
@@ -33,7 +36,8 @@ const $ = (id) => document.getElementById(id),
   ctx = canvas.getContext("2d");
 const room = new URL(location.href).searchParams.get("room") || "main";
 const code = /^[a-z0-9-]{1,40}$/.test(room) ? room : "main";
-const webMode = new URL(location.href).searchParams.get("mode") === "web";
+const meetupRoom=isMeetupInvite(location.href);
+const webMode = meetupRoom || new URL(location.href).searchParams.get("mode") === "web";
 const peers = new Map(),
   keys = new Set(),
   images = new Map();
@@ -545,6 +549,7 @@ const mesh = new PlazaMesh(
     },
   },
   webMode,
+  !meetupRoom,
 );
 controls();
 function paint(now) {
@@ -910,10 +915,13 @@ $("chat").onsubmit = (e) => {
   const input = $("message"),
     text = input.value.trim().slice(0, 160);
   if (!text || !mesh.links.size) return;
-  mesh.send({ t: "chat", text });
-  log(self.name + " · " + text);chatBubble("me",text);
+  postRoomChat(text);
   input.value = "";updateChatButton();
 };
+function postRoomChat(text) {
+  mesh.send({t:"chat",text});
+  log(self.name+" · "+text);chatBubble("me",text);
+}
 function panel(mode, title) {
   resetStick();
   keys.clear();
@@ -1072,6 +1080,7 @@ $("profile").onclick = () => {
       try{localStorage.setItem(key,input.checked?"on":"off");}catch{}
     };
   }
+  addInstallOption(settings);
   add(settings,"a","문의 게시판 열기").href="https://github.com/TaeHuiKKIM/knu-town-community/issues";
 
 };
@@ -1207,21 +1216,30 @@ function renderFriends(){
 $("network").onclick = ()=>{
   const body=panel("friends","같은 방 친구");
   add(body,"section","").id="friend-list";
+  add(body,"button",meetups.current?"모임 정보":"모임 만들기").onclick=meetups.current?meetups.openRoom:meetups.form;
   add(body,"button","연결 상태").onclick=diagnostics;
   renderFriends();
 };
-$("invite").onclick = async () => {
-  const b = panel("invite", "광장 초대"),
-    url = new URL(location.href);
-  url.hash = "";
+const meetups=campusMeetups({panel,add,invite:$("invite"),dialog:$("panel"),
+  start:()=>mesh.start(),stop:()=>mesh.close(),connected:()=>mesh.active&&!!slot,
+  postChat:postRoomChat,share:inviteLink});
+$("invite").onclick=()=>meetups.current ? meetups.openRoom() : inviteLink();
+function inviteLink() {
+  const active=meetups.current;
+  const b=panel("invite",active?"모임 초대":"광장 초대");
+  const url=active ? new URL(active.link) : new URL(location.href);
+  if(!active){
+    url.hash="";
+    decorate(add(b,"button","학과·동아리·스터디 모임 만들기"),"friends").onclick=meetups.form;
+  }
   if(navigator.share){
     decorate(add(b,"button","초대 링크 공유"),"invite").onclick=async()=>{
-      try{await navigator.share({title:"크누타운 광장",url:url.href});}
+      try{await navigator.share({title:active?active.details.title:"크누타운 광장",url:url.href});}
       catch(error){if(error.name!=="AbortError"){input.focus();input.select();}}
     };
   }
   const img = add(b, "img", "");
-  img.alt = "광장 초대 QR";
+  img.alt=active?"모임 초대 QR":"광장 초대 QR";
   QRCode.toDataURL(url.href).then(src=>img.src=src).catch(()=>img.remove());
   const input = add(b, "input", "");
   input.readOnly = true;
@@ -1235,11 +1253,12 @@ $("invite").onclick = async () => {
       input.select();
     }
   };
+  if(active){add(b,"button","모임 정보로").onclick=meetups.openRoom;return;}
   decorate(add(b, "button", "새 친구 방 만들기"),"friends").onclick = () => {
     url.searchParams.set("room", crypto.randomUUID());
     location.assign(url.href);
   };
-};
+}
 attachStudy({button:$("study"),profile:self,panel,add,rankings:()=>[self,...peers.values()]
   .filter(p=>sharedCalendar(p.calendar))
   .map(p=>({name:p.name,minutes:p.calendar.days.reduce((sum,n)=>sum+n,0)}))
@@ -1249,6 +1268,10 @@ attachStudy({button:$("study"),profile:self,panel,add,rankings:()=>[self,...peer
   rewardMs=totals.rewardMs;owned=totals.ownedItemIds;
   if(changed||self.studying!==studying){self.studying=studying;announcePose();}
 }});
+if(meetupRoom)void meetups.initialize();
+window.addEventListener('hashchange',event=>{
+  if(isMeetupInvite(event.oldURL)||isMeetupInvite(event.newURL))location.reload();
+});
 onpagehide = () => mesh.close();
 onpageshow = (e) => {
   if (e.persisted) location.reload();

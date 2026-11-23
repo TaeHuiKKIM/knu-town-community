@@ -6,7 +6,9 @@
     "build": "node build.mjs",
     "check": "node check-plaza.mjs",
     "check:mobile": "node check-mobile-ui.mjs",
-    "check:input": "node check-campus-input.mjs"
+    "check:input": "node check-campus-input.mjs",
+    "check:install": "node check-install.mjs",
+    "check:journeys": "node check-campus-journeys.mjs"
   },
   "dependencies": {
     "@vercel/functions": "3.11.3",

@@ -6,6 +6,9 @@
 
 [공개 웹 광장 체험](https://knu-direct-plaza.vercel.app/?mode=web) · [교내망 실험과 측정 결과](docs/network-research.md) · [팀이 함께 반영한 기능](docs/team-contributions.md) · [다른 프로젝트에 쓸 수 있는 LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
 
+
+웹에서는 **초대 → 학과·동아리·스터디 모임 만들기**로 주제 있는 소규모 모임을 열 수 있습니다. 초대받은 사람은 링크에서 내용을 보고 참여 여부를 선택합니다. 자주 방문한다면 **옷장 → 화면 설정 · 문의 → 홈 화면에 추가**로 웹 앱을 설치할 수 있습니다. iPhone Safari에서는 공유 메뉴의 **홈 화면에 추가**를 사용하세요. [웹 모임과 설치](docs/web-entry.md)
+
 ## 노트북으로 첫 방 열기
 
 Node.js **22.17 이상**과 Git을 설치한 뒤 아래 명령을 차례로 실행하세요.
