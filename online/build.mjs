@@ -23,7 +23,10 @@ await build({
   bundle: true,
   minify: true,
   format: "esm",
-  define:{WEB_OUTFIT_ROWS:JSON.stringify(outfitRows)},
+  define:{
+    WEB_OUTFIT_ROWS:JSON.stringify(outfitRows),
+    WEB_SUPPORT_EMAIL:JSON.stringify(process.env.KNU_SUPPORT_EMAIL?.trim() ?? ""),
+  },
   target: "es2020",
 });
 const files = {

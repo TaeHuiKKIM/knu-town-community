@@ -1106,7 +1106,9 @@ $("profile").onclick = () => {
     };
   }
   addInstallOption(settings);
-  add(settings,"a","문의 게시판 열기").href="https://github.com/TaeHuiKKIM/knu-town-community/issues";
+  const support=add(settings,"a",WEB_SUPPORT_EMAIL ? "문의 메일 보내기" : "문의 게시판 열기");
+  support.href=WEB_SUPPORT_EMAIL ? "mailto:"+WEB_SUPPORT_EMAIL : "https://github.com/TaeHuiKKIM/knu-town-community/issues";
+  if(!WEB_SUPPORT_EMAIL){support.target="_blank";support.rel="noopener";}
 
 };
 function renderDiagnostics() {

@@ -46,6 +46,8 @@ npm start
 
 ## 검증 명령
 
+웹 배포에는 `npm --prefix online run build`로 만든 `online/dist`를 사용한다. 옷장의 기본 문의 버튼은 새 탭에서 이 저장소의 Issues를 연다. 별도 운영 메일을 안내하려면 빌드할 때 `KNU_SUPPORT_EMAIL`을 지정한다. 이 주소는 게임 화면에 공개된다.
+
 ```sh
 npm test
 node scripts/load-event-plaza.mjs 10
