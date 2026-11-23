@@ -4,7 +4,7 @@
 
 ![크누타운의 경북대학교 본관과 일청담 광장](design/stage1/assets/previews/plaza.png)
 
-[공개 웹 광장 체험](https://knu-direct-plaza.vercel.app/?mode=web) · [교내망 실험과 측정 결과](docs/network-research.md) · [다른 프로젝트에 쓸 수 있는 LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
+[공개 웹 광장 체험](https://knu-direct-plaza.vercel.app/?mode=web) · [교내망 실험과 측정 결과](docs/network-research.md) · [팀이 함께 반영한 기능](docs/team-contributions.md) · [다른 프로젝트에 쓸 수 있는 LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
 
 ## 노트북으로 첫 방 열기
 
