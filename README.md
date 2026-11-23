@@ -1,0 +1,56 @@
+# 크누타운
+
+경북대학교 대구캠퍼스의 일청담 광장에서 친구와 만나고, 중앙도서관에서 함께 공부하는 브라우저 멀티플레이 게임입니다. 한 사람이 노트북에서 방을 열면 같은 네트워크에 있는 참가자는 휴대폰이나 노트북의 브라우저로 들어옵니다.
+
+![크누타운의 경북대학교 본관과 일청담 광장](design/stage1/assets/previews/plaza.png)
+
+[공개 웹 광장 체험](https://knu-direct-plaza.vercel.app/?mode=web) · [교내망 실험과 측정 결과](docs/network-research.md) · [다른 프로젝트에 쓸 수 있는 LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
+
+## 노트북으로 첫 방 열기
+
+Node.js **22.17 이상**과 Git을 설치한 뒤 아래 명령을 차례로 실행하세요.
+
+```sh
+git clone https://github.com/TaeHuiKKIM/knu-town-community.git
+cd knu-town-community
+npm ci
+npm start
+```
+
+1. 방장 브라우저에서 [일청담 광장](http://localhost:4183/r/main)을 엽니다. 닉네임과 캐릭터를 선택해 입장하세요.
+2. 친구도 같은 Wi-Fi에 연결합니다. 터미널에 표시된 **Wi-Fi 주소**를 보내거나 게임 오른쪽 위 **초대**에서 QR을 보여 주세요. 친구가 자기 휴대폰에서 `localhost`를 열면 그 휴대폰 자신에게 연결됩니다.
+3. 두 사람의 캐릭터가 보이면 서로 이동하거나 채팅해 보세요. 방을 운영하는 동안 노트북과 터미널을 켜 둡니다. 종료는 `Ctrl+C`입니다.
+
+기본 포트는 4183입니다. `PORT`로 포트를, `STUDY_BIND`로 수신할 주소를 정할 수 있습니다. 혼자 체험할 때는 PowerShell에서 `$env:STUDY_BIND='127.0.0.1'`을 지정해 실행하세요. 자세한 운영 방법은 [운영과 문제 해결](docs/operations.md)에 있습니다.
+
+## 게임에서 할 수 있는 일
+
+| 장소 또는 메뉴 | 이용 방법 |
+| --- | --- |
+| 일청담 광장 · 은행나무길 | 키보드 방향키·WASD 또는 화면 조이스틱으로 걸으며 친구를 만납니다. 벤치에 앉거나 인사·점프·감정을 표현합니다. |
+| 도서관 라운지 · 열람실 | 도서관 가구에서 상호작용하고, 중앙도서관 열람실에서 빈 자리를 골라 함께 공부합니다. |
+| IT대학 융복합관 · IT4호관 · 강의실 | 이정표나 장소 메뉴로 이동해 각 건물과 강의실을 둘러봅니다. |
+| 공부 · 기록 · 옷장 | 과목을 정해 공부하고 시간을 확인해 기록합니다. 누적 공부 시간에 따라 의상을 열고 갈아입습니다. |
+| 친구 광장 | 만든 광장의 링크나 QR을 공유합니다. 메인과 별도로 친구들과 공부하거나 놀 수 있습니다. |
+| AI 튜터 | 방장 PC에 호환되는 Ollama 모델을 설치해 실행했을 때 공부 질문을 보낼 수 있습니다. |
+
+LAN 메인 광장 정원은 100명, 친구 광장은 16명, 열람실은 64석입니다. 공개 웹판은 최대 4명의 실험 공간입니다. 행사판의 정원 설정, 노트북에서 모의 참가자 100명으로 측정한 성능, 교내 Wi-Fi에서 실제 팀원 3명이 통신한 기록은 각각 [네트워크 연구](docs/network-research.md)에서 확인할 수 있습니다.
+
+## 개발과 검증
+
+```sh
+npm test
+npm --prefix online ci
+npm --prefix online run build
+```
+
+| 위치 | 내용 |
+| --- | --- |
+| [src](src) · [server.mjs](server.mjs) | 방 입장, 행동 검증, 실시간 상태 전송, 공부 데이터와 튜터 |
+| [public/campus](public/campus) | 캠퍼스 지도, 캐릭터, 이동, 옷장, 공부 UI |
+| [design/stage1/assets](design/stage1/assets) · [design/character-v3](design/character-v3) | 게임 실행에 사용하는 배경·도구·폰트·의상 시트 |
+| [online](online) | 브라우저 간 직접 연결과 웹 연결 모드를 제공하는 별도 웹판 |
+| [test](test) · [scripts](scripts) | 기능 회귀 테스트와 제한된 로컬 부하 검사 |
+| [docs](docs) | 게임 구성, 운영, 교내망 실험, 저작물별 출처 |
+
+게임 코드의 사용 조건과 폰트·이미지의 조건은 [라이선스](LICENSE.md)와 [출처 안내](docs/credits.md)를 참고하세요. 문의나 재현 가능한 버그는 [Issues](https://github.com/TaeHuiKKIM/knu-town-community/issues)에 남겨 주세요.

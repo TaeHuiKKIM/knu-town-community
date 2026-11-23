@@ -1,0 +1,93 @@
+/* 크누타운 UI 통일 (이슈 #4). 마지막에 불러와서 헤더·하단 바·지도 버튼·대화상자·이정표를
+   한 스킨 세트와 한 크기 규칙으로 맞춘다. 스킨 그림은 design/ui-kit/make-skins.py가 만든다. */
+:root{
+  --skin-ink:#3b2a1f;--skin-paper:#f7ecd2;--skin-wine:#7c2436;--skin-cream-text:#fff6e2;
+  --skin-control:44px;--skin-font:13px;--skin-small:11px;
+}
+
+/* ── 헤더 ─────────────────────────────────────────── */
+body.campus-game .topbar{
+  border:0;border-bottom:8px solid transparent;border-image:url('/campus/assets/skins/header-bar.png') 0 8 8 fill stretch;
+  background:none;min-height:var(--head,56px);image-rendering:pixelated
+}
+body.campus-game .brand-mark{
+  display:grid;place-items:center;width:32px;height:32px;border:6px solid transparent;
+  border-image:url('/campus/assets/skins/button-wine.png') 6 fill stretch;background:none;border-radius:0;
+  color:var(--skin-cream-text);font:700 15px/1 Galmuri11,Galmuri,sans-serif
+}
+body.campus-game .brand strong{font-size:15px;color:var(--skin-ink)}
+body.campus-game .top-actions{align-items:center;gap:6px}
+body.campus-game .top-actions>button{min-height:var(--skin-control);font-size:var(--skin-font)}
+body.campus-game .top-actions .ui-icon{width:22px;height:22px}
+/* 연결 점도 같은 틀 안에 */
+body.campus-game #connection{
+  width:var(--skin-control);height:var(--skin-control);border:7px solid transparent;
+  border-image:url('/campus/assets/skins/button-paper.png') 6 fill stretch;background:none;border-radius:0
+}
+
+/* ── 하단 바 ──────────────────────────────────────── */
+body.campus-game .bottom-dock{
+  border:0;border-top:8px solid transparent;border-image:url('/campus/assets/skins/dock-bar.png') 8 0 0 fill stretch;
+  background:none;display:grid;grid-template-columns:repeat(4,minmax(0,120px));justify-content:center;gap:8px;
+  padding:4px 10px calc(6px + env(safe-area-inset-bottom,0px))
+}
+body.campus-game .dock-button{
+  min-width:0;width:100%;min-height:52px;padding:2px 4px;flex-direction:column;gap:2px;
+  font-size:var(--skin-small);line-height:1.1
+}
+body.campus-game .dock-button .ui-icon{width:26px;height:26px}
+
+/* ── 지도 위 버튼: 높이·글자·틀 하나로 ───────────────── */
+body.campus-game :is(.scene-chip,.campus-tool,.gesture-toggle,.scene-actions button){
+  min-height:var(--skin-control);font-size:var(--skin-font);line-height:1.15
+}
+body.campus-game .campus-tool{min-width:var(--skin-control);width:var(--skin-control);padding:0}
+body.campus-game :is(.scene-chip,.campus-tool,.gesture-toggle,.scene-actions button) .ui-icon{width:22px;height:22px}
+body.campus-game .scene-actions{align-items:stretch;gap:6px}
+body.campus-game .scene-actions button{height:auto;min-width:56px}
+/* 비활성은 흐리게 하지 않고 회색 틀로 */
+body.campus-game .scene-actions button:disabled,body.campus-game :is(.gesture-toggle,.scene-chip):disabled{
+  opacity:1;--face:var(--ui-muted);border-image-source:var(--ui-muted);color:#5a5046
+}
+body.campus-game .scene-actions kbd{font-size:9px}
+
+/* ── 조이스틱 ─────────────────────────────────────── */
+body.campus-game .joystick{
+  border:0;border-radius:0;background:url('/campus/assets/skins/stick-base.png') center/100% 100% no-repeat;
+  image-rendering:pixelated;box-shadow:none
+}
+body.campus-game .stick{
+  border:0;border-radius:0;background:url('/campus/assets/skins/stick-cap.png') center/100% 100% no-repeat;
+  image-rendering:pixelated;box-shadow:none
+}
+
+/* ── 대화상자 ─────────────────────────────────────── */
+/* 선택된 탭이 비활성처럼 흐려 보이지 않게 */
+body.campus-game dialog [role=tab][aria-selected=true],body.campus-game dialog button[aria-selected=true]:disabled{
+  opacity:1;color:var(--skin-cream-text)
+}
+body.campus-game dialog [role=tab][aria-selected=true] *{color:inherit;opacity:1}
+/* 공부 창: 친구 공부 상태·AI 튜터를 한 줄 두 칸으로 */
+body.campus-game .study-quick-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+body.campus-game .study-quick-links>button{width:100%;min-height:var(--skin-control);font-size:var(--skin-font)}
+/* 메뉴: 아이콘이 없는 칸도 같은 높이·정렬 */
+body.campus-game .menu-grid>button{min-height:var(--skin-control);font-size:var(--skin-font);justify-content:center}
+body.campus-game dialog .close{width:var(--skin-control);height:var(--skin-control)}
+
+/* ── 이정표 이름표: 나무판 하나로 ─────────────────── */
+.entrance-caption{
+  background:none;border:5px solid transparent;border-image:url('/campus/assets/skins/sign-plate.png') 6 8 fill stretch;
+  border-radius:0;color:#fff1cc;font:700 14px/1.3 Galmuri11,Galmuri,sans-serif;padding:1px 6px;image-rendering:pixelated
+}
+
+@media (max-width:760px){
+  :root{--skin-control:42px;--skin-font:12px}
+  body.campus-game .bottom-dock{gap:6px;grid-template-columns:repeat(4,minmax(0,1fr))}
+  body.campus-game .dock-button{min-height:50px}
+}
+
+/* 공부 창 바로가기도 다른 버튼과 같은 틀 */
+body.campus-game .study-quick-links>.text-button{
+  border:7px solid transparent;border-image:var(--ui-paper) 8 fill stretch;background:none;border-radius:0;
+  text-decoration:none;color:var(--skin-ink);display:flex;align-items:center;justify-content:center;padding:0 6px
+}

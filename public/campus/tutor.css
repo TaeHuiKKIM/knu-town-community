@@ -1,0 +1,28 @@
+.tutor-dialog{width:min(560px,calc(100vw - 24px))}
+.tutor-body{display:flex;flex-direction:column;gap:8px}
+.tutor-status{margin:0;text-align:left;display:flex;align-items:center;gap:6px}
+.tutor-status:before{content:'';width:8px;height:8px;border-radius:50%;background:#c9c2ad;flex:none}
+.tutor-status[data-state=ready]:before{background:#4f9a6a}
+.tutor-status[data-state=off]:before{background:#c06a55}
+.tutor-log:empty,.tutor-tools:not(:has(button:not([hidden]))){display:none}
+.tutor-log{display:flex;flex-direction:column;gap:10px;max-height:min(380px,45dvh);overflow:auto;overscroll-behavior:contain;padding:10px;background:#f4f0e2;border:1px solid var(--line);border-radius:9px;scrollbar-width:thin}
+.tutor-msg{display:flex}
+.tutor-user{justify-content:flex-end}
+.tutor-text{max-width:88%;padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.tutor-user .tutor-text{background:var(--wine);color:#fff8ec;border-bottom-right-radius:3px}
+.tutor-assistant .tutor-text{background:#fffdf6;border:1px solid var(--line);border-bottom-left-radius:3px}
+.tutor-pending .tutor-text{color:var(--muted)}
+.tutor-code{margin:6px 0;padding:8px 10px;background:#2f3529;color:#f1efdf;border-radius:6px;overflow:auto;white-space:pre;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace}
+.tutor-form{align-items:center}
+.tutor-form textarea{min-width:0;flex:1;width:100%;font:inherit;font-size:16px;box-sizing:border-box;min-height:44px;max-height:120px;resize:vertical;border:1px solid #d6cdb7;background:#fffdf6;border-radius:7px;padding:9px;color:var(--ink)}
+.tutor-form textarea:disabled{background:#eeeadc}
+.tutor-tools{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tutor-tools .text-button{min-height:36px;font-size:12px}
+.focus-inner>.tutor-open{display:block;margin:6px auto 0}
+.tutor-heading{display:inline-block;margin-top:4px;color:var(--wine)}
+.tutor-inline{padding:1px 5px;border-radius:4px;background:#ece6d3;font:12px ui-monospace,Menlo,Consolas,monospace}
+
+.tutor-info p{margin:6px 0;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.tutor-info #tutor-model:empty{display:none}
+
+.campus-game #tutor-form .send{box-sizing:border-box;min-width:62px;height:44px;min-height:44px;padding:0 4px;font-size:14px;line-height:1.2;white-space:nowrap}

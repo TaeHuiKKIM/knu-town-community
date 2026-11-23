@@ -1,0 +1,268 @@
+/* Shared by the LAN and web clients. The regular face stays available for long messages. */
+:root{
+  --campus-ink:#39282c;
+  --campus-wine:#702b40;
+  --campus-cream:#fff4d9;
+  --campus-focus:#246559;
+  --campus-surface:#f8eed9;
+  --panel-gutter:16px;
+  --control-inset:8px;
+  --control-gap:6px;
+  --control-height:44px;
+}
+/* Keep the curved PNG corners on controls when the button is stretched or selected. */
+:where(button,summary,.avatar-choice),input::file-selector-button{
+  background-clip:padding-box;
+}
+body.campus-game dialog :is(button,summary), #panel :is(button,summary),
+body.campus-game .topbar button, body.campus-game .bottom-dock button,
+body.campus-game .scene-actions button, body>header button, .campus-dock button{
+  font-weight:700;letter-spacing:0;word-break:keep-all;
+}
+body.campus-game .topbar strong,body>header strong{font-weight:700}
+body.campus-game :is(.top-actions,.bottom-dock) button,body>header button,.campus-dock button{
+  font-size:14px;line-height:1.25
+}
+body.campus-game button :is(.ui-icon),#panel img,.campus-dock button::before{image-rendering:pixelated}
+body.campus-game .topbar #connection{min-width:44px;height:44px}
+body.campus-game .bottom-dock .dock-button{min-height:48px;gap:4px}
+body.campus-game .bottom-dock .ui-icon{width:32px;height:32px}
+body.campus-game .bottom-dock .dock-button span{font-size:14px;font-weight:700;line-height:1.15}
+
+#study-dialog,#panel[data-mode="study"]{--panel-art:url(panels/notebook.png)}
+#wardrobe-dialog,#panel[data-mode="profile"]{--panel-art:url(panels/jacket.png)}
+#tutor-dialog{--panel-art:url(panels/tutor.png)}
+#local-dialog,#friend-calendar-dialog,#panel[data-mode="study"][data-section="records"]{--panel-art:url(panels/archive.png)}
+#local-dialog:has(#local-tab-themes[aria-selected="true"]),#panel[data-mode="study"][data-section="shop"]{--panel-art:url(icons/seed-chest.png)}
+#room-dialog{--panel-art:url(icons/dock-menu.png)}
+#scene-dialog,#spaces-dialog,#panel[data-mode="directions"]{--panel-art:url(icons/map.png)}
+#invite-dialog,#panel[data-mode="invite"]{--panel-art:url(icons/invite.png)}
+#people-dialog,#panel[data-mode="friends"],#panel[data-mode="network"]{--panel-art:url(icons/friends.png)}
+#chat-dialog{--panel-art:url(icons/chat.png)}
+#gesture-dialog,#panel[data-mode="action"]{--panel-art:url(icons/actions-frame-2.png)}
+#check-dialog{--panel-art:url(icons/dock-records.png)}
+#panel[data-mode="seats"]{--panel-art:url(icons/library-desk.png)}
+
+/* Modal actions stay in one sticky header, above the scrolling panel content. */
+body.campus-game dialog .dialog-head,#panel .panel-head{
+  position:sticky;top:0;z-index:2;isolation:isolate;
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:52px;gap:var(--control-gap);padding:4px var(--panel-gutter);
+  box-sizing:border-box;background:var(--campus-surface);color:var(--campus-ink);
+}
+body.campus-game dialog .dialog-body,#panel #panelbody{
+  padding:4px var(--panel-gutter) var(--panel-gutter);min-width:0;
+}
+#panel{padding:0}
+#panel .panel-head{flex:none}
+#panel .panel-head form{margin:0;flex:none}
+#panel #panel-title{min-width:0;margin:0;padding:0;flex:1}
+body.campus-game .dialog-head :is(h1,h2),#panel-title{
+  display:flex;align-items:center;gap:10px;margin:0;font-size:21px;line-height:1.25;font-weight:700
+}
+body.campus-game dialog:not(#join-dialog,#study-delete-dialog) .dialog-head h2::before,
+#panel-title::before{
+  content:"";display:block;flex:none;width:36px;height:36px;margin:0;
+  background:var(--panel-art) center/contain no-repeat;image-rendering:pixelated
+}
+body.campus-game :is(#wardrobe-dialog,#study-dialog,#tutor-dialog,#local-dialog) .dialog-head h2::before,
+#panel:is([data-mode="profile"],[data-mode="study"]) #panel-title::before{width:52px;height:44px}
+body.campus-game dialog .dialog-head .close,#panel .panel-head .close{
+  display:grid;place-items:center;box-sizing:border-box;flex:none;float:none;
+  width:var(--control-height);height:var(--control-height);
+  min-width:var(--control-height);min-height:var(--control-height);margin:0;padding:0;
+  border:0;border-image:none;background:transparent;box-shadow:none;cursor:pointer
+}
+body.campus-game .dialog-head .close img,#panel .close img{width:18px;height:18px;display:block;margin:0;image-rendering:pixelated}
+
+body.campus-game .menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+body.campus-game .menu-grid .menu-action,body.campus-game .study-quick-links>.text-button{
+  display:flex;align-items:center;justify-content:flex-start;gap:7px;
+  min-width:0;min-height:48px;padding:2px 7px;font-size:14px;line-height:1.35;text-align:start
+}
+body.campus-game :is(.menu-grid,.study-quick-links) .ui-icon{width:24px;height:24px;flex:none}
+body.campus-game dialog :is(.panel-tabs,.look-tabs) [role=tab],#panel .study-tabs button{
+  min-width:0;min-height:44px;line-height:1.25;font-size:14px;font-weight:700
+}
+body.campus-game dialog :is(.panel-tabs,.look-tabs) [role=tab][aria-selected=true],
+#panel .study-tabs button[aria-current=page]{
+  --face:var(--ui-wine);border-image-source:var(--ui-wine)!important;
+  background-color:transparent;color:var(--campus-cream);opacity:1
+}
+body.campus-game .wardrobe-options{min-width:0;max-width:100%}
+body.campus-game .study-plan summary,body.campus-game .study-plan :is(button,summary){min-height:44px}
+body.campus-game .study-plan :is(button,summary){font-weight:700}
+body.campus-game dialog :is(.primary,.menu-action),#panel :is(.save-look,.destination-card){font-size:14px}
+body.campus-game dialog :is(button,summary):focus-visible,#panel :is(button,summary):focus-visible{
+  outline:3px solid var(--campus-focus);outline-offset:2px
+}
+body.campus-game dialog button:not(:disabled):active,#panel button:not(:disabled):active{filter:brightness(.94)}
+/* Short states are atomic. Reserve their own space before wrapping long item names. */
+body.campus-game .focus-card>.menu-action,
+body.campus-game .study-outfit-card>span,body.campus-game #apply-outfit,
+#panel :is(.theme-offer,.outfit-cards button) small{white-space:nowrap}
+body.campus-game dialog :is(.menu-grid,.panel-tabs,.look-tabs),#panel :is(.study-tabs,.look-grid){
+  gap:var(--control-gap)
+}
+body.campus-game dialog .menu-grid .menu-action,.campus-game dialog .study-quick-links>.text-button{
+  padding-inline:var(--control-inset)
+}
+body.campus-game dialog :is(.panel-tabs,.look-tabs)>button,#panel .study-tabs>button{
+  box-sizing:border-box;min-height:var(--control-height);margin:0
+}
+body>header{border:0;border-bottom:6px solid transparent;border-image:url(skins/header-bar.png) 0 8 8 fill stretch}
+body>footer{border:0;border-top:6px solid transparent;border-image:url(skins/dock-bar.png) 8 8 0 fill stretch}
+#gates button::before{
+  border:5px solid transparent;border-image:url(skins/sign-plate.png) 6 8 fill stretch;
+  background:transparent;color:#fff2cc;box-shadow:none;padding:1px 5px;font-weight:700
+}
+#gates button.near::before{background:transparent;color:#fff8e4;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:760px){
+  :root{--panel-gutter:12px;--control-inset:6px}
+  body.campus-game{--skin-control:44px}
+  body.campus-game .focus-card{
+    grid-template-columns:64px minmax(0,1fr) max-content;gap:0 var(--control-gap);
+    padding-right:var(--control-gap);align-items:center;
+  }
+  body.campus-game .focus-card>img{width:64px;height:64px}
+  body.campus-game .focus-card>button{margin:0;padding-inline:var(--control-inset);min-width:64px}
+  body.campus-game .focus-card>strong{overflow-wrap:anywhere}
+  #panel .theme-shelf{grid-template-columns:1fr}
+  #panel .theme-shelf .theme-offer{display:grid;grid-template-columns:64px minmax(0,1fr) max-content;align-items:center;gap:var(--control-gap);text-align:left;padding:0 var(--control-inset) 0 0}
+  #panel .theme-shelf .theme-offer::before{height:44px}
+  #panel .theme-offer small{font-size:13px}
+  #panel .study-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  body>header #place{min-width:0;white-space:normal;line-height:1.18;overflow-wrap:anywhere}
+  body>header :is(#invite,#network){flex:none}
+  body.campus-game .bottom-dock .dock-button{flex-direction:row;min-width:0;min-height:48px;gap:3px;padding:1px 2px}
+  body.campus-game .bottom-dock .ui-icon{width:28px;height:28px}
+  body.campus-game .bottom-dock .dock-button span{font-size:13px}
+  body.campus-game .dialog-head :is(h1,h2),#panel-title{font-size:19px;gap:7px}
+  body.campus-game .topbar .top-actions>button,body>header button{font-size:13px}
+}
+@media(max-width:370px){
+  body.campus-game :is(.menu-grid,.study-quick-links) .ui-icon{width:20px;height:20px}
+  body.campus-game .menu-grid .menu-action,body.campus-game .study-quick-links>.text-button{padding-inline:2px;gap:4px;font-size:13px}
+  body.campus-game .topbar .top-actions{gap:2px}
+  body.campus-game .bottom-dock{column-gap:3px}
+  body.campus-game .bottom-dock .ui-icon{width:20px;height:20px}
+  body.campus-game dialog .look-tabs [role=tab]{font-size:13px}
+}
+
+/* Outfit preview and controls share the same room and spacing on both clients. */
+#wardrobe-dialog,#panel[data-mode="profile"]{
+  width:min(760px,calc(100vw - 20px));
+  max-height:calc(100dvh - 20px);
+  --fitting-gap:8px;
+}
+#wardrobe-dialog .wardrobe-body,#panel .fitting-layout{
+  display:grid;
+  grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr);
+  gap:16px;
+  align-items:start;
+}
+.fitting-preview,.fitting-choices{min-width:0}
+.fitting-scene{
+  display:grid;
+  place-items:end center;
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  box-sizing:border-box;
+  height:clamp(155px,25vh,220px);
+  padding:0 0 8px;
+  background:#edcea4 url(panels/fitting-room.png) center 70% / cover no-repeat;
+  image-rendering:pixelated;
+}
+#wardrobe-dialog .fitting-scene canvas,#panel .fitting-scene .profile-preview{
+  width:auto;
+  height:90%;
+  max-width:100%;
+  margin:0;
+  image-rendering:pixelated;
+}
+.fitting-feedback{position:absolute;inset:auto 6px 8px;text-align:center}
+.fitting-feedback:has(>[hidden]:first-child):has(>[hidden]:last-child){display:none}
+.fitting-feedback p:not([hidden]){display:inline-block;margin:0;padding:4px 7px;background:#fbf1db;color:#45362a}
+.fitting-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:50px;gap:var(--fitting-gap);padding-block:3px;
+}
+.fitting-caption{display:grid;gap:2px;min-width:0;line-height:1.25;color:#402d28}
+.fitting-caption strong{font-size:15px;overflow-wrap:anywhere}
+.fitting-caption span{font-size:12px;color:#624b40;white-space:nowrap}
+#wardrobe-dialog .fitting-rotate,#panel .fitting-rotate{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;
+  min-height:44px;margin:0;padding:0 6px;font-size:13px;white-space:nowrap;
+}
+.fitting-rotate img,#panel .fitting-rotate img{width:20px;height:20px;margin:0;image-rendering:pixelated}
+#wardrobe-dialog .look-tabs{display:flex;gap:var(--fitting-gap);margin:0 0 var(--fitting-gap)}
+#wardrobe-dialog .look-tab{flex:1;min-width:0;padding-inline:2px}
+#wardrobe-dialog #coat-grid:not([hidden]),#panel .coat-choices{
+  display:grid;grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--fitting-gap);
+}
+#wardrobe-dialog #coat-grid .costume,#panel .coat-choices button{
+  display:grid;align-content:center;justify-items:center;min-width:0;width:100%;min-height:82px;
+  margin:0;padding:1px;gap:3px;
+}
+#wardrobe-dialog #coat-grid canvas,#panel .coat-choices canvas{width:36px;height:48px;max-width:100%;object-fit:contain}
+#wardrobe-dialog #coat-grid span,#panel .coat-choices span{margin:0;font-size:13px;white-space:nowrap}
+#wardrobe-dialog .study-outfit-list,#panel .look-options .outfit-cards{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:var(--fitting-gap);
+}
+#wardrobe-dialog .study-outfit-list{margin-top:var(--fitting-gap)}
+#wardrobe-dialog .study-outfit-card,#panel .outfit-cards button{
+  display:flex;align-items:center;gap:var(--fitting-gap);min-height:52px;min-width:0;
+  width:100%;margin:0;padding:0 6px;text-align:left;
+}
+#panel .outfit-cards img{width:28px;height:36px;object-fit:contain;flex:none;margin:0}
+#panel .outfit-cards span{flex:1;min-width:0;font-size:14px}
+#wardrobe-dialog .study-outfit-card>span,#panel .outfit-cards small{flex:none;white-space:nowrap}
+#wardrobe-dialog .wardrobe-actions{margin-top:10px}
+#wardrobe-dialog #outfit-error:empty{display:none}
+#wardrobe-dialog #apply-outfit,#panel .save-look{min-height:48px}
+#panel .fitting-choices>.look-options:first-child{margin-top:0}
+#panel .fitting-choices .look-options{padding:0}
+#panel .fitting-choices legend,#panel .fitting-name-field>label{font-size:14px;font-weight:700}
+#panel[data-mode="profile"][open]{display:flex;flex-direction:column;overflow:hidden}
+#panel[data-mode="profile"] #panelbody{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+#panel #profile-footer{
+  position:static;flex:none;margin:0;padding:6px var(--panel-gutter) 8px;
+  background:var(--campus-surface);
+}
+#panel .fitting-account{min-width:0}
+#panel .fitting-account .look-options{margin-top:0;padding:0}
+#panel .fitting-name-field>label{display:block;margin:10px 0 3px}
+#panel .fitting-name-field>input{width:100%;margin:0}
+#panel .avatar-choices{gap:var(--fitting-gap)}
+#panel .avatar-choices button{display:flex;justify-content:center;align-items:center;min-height:44px;gap:5px;padding:0 4px}
+#panel .avatar-choices canvas{width:24px;height:32px}
+@media(min-width:641px){
+  #panel .fitting-layout{row-gap:10px}
+  #panel .fitting-choices{grid-column:2;grid-row:1/span 2}
+}
+@media(max-width:640px){
+  #panel .fitting-account{display:grid;grid-template-columns:minmax(136px,1fr) minmax(0,1fr);align-items:end;gap:8px}
+  #panel .fitting-name-field>label{margin:0 0 3px}
+  #panel .fitting-account input{min-height:48px}
+  #panel .avatar-choices button{min-height:48px;font-size:13px;gap:2px;padding:0}
+  #panel .avatar-choices canvas{width:18px;height:24px}
+  #wardrobe-dialog .wardrobe-body,#panel .fitting-layout{grid-template-columns:minmax(0,1fr);gap:8px}
+  .fitting-scene{height:clamp(130px,19dvh,170px)}
+}
+@media(max-width:410px){
+  #wardrobe-dialog #coat-grid:not([hidden]),#panel .coat-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #wardrobe-dialog #coat-grid .costume,#panel .coat-choices button{
+    display:flex;align-items:center;justify-content:flex-start;gap:6px;min-height:54px;padding-inline:5px;
+  }
+  #wardrobe-dialog #coat-grid canvas,#panel .coat-choices canvas{width:33px;height:44px}
+}
+@media(min-width:641px) and (max-height:520px){
+  .fitting-scene{height:140px}
+}
+.shop-offers{display:grid;gap:8px;margin-block:8px 12px}
+#local-dialog .shop-offers button,#panel .shop-offers button{
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;
+  width:100%;min-height:48px;margin:0;padding-inline:8px;text-align:start;
+}
+#panel .shop-offers button::before{flex:none;margin:0}

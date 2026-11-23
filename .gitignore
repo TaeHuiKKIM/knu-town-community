@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.runtime/
+.vercel/
+.env
+.env.*
+*.log
+*.sqlite*
+*.db
+*.knutown.json
+*.pem
+*.key
+*.pfx
+*.crt
+playwright-report/
+test-results/

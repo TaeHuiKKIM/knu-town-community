@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f8f3e7" />
+    <title>크누타운 · 일청담 광장</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/interface.css" />
+  </head>
+  <body>
+    <header>
+      <strong>크누타운</strong><button id="place" title="길 찾기" aria-label="현재 장소와 길 찾기">일청담 광장</button
+      ><button id="network" aria-label="친구 목록 열기">연결 중</button
+      ><button id="invite">초대</button>
+    </header>
+    <main>
+      <div id="landscape" aria-hidden="true"><canvas id="web-ambient" width="768" height="512"></canvas><canvas id="web-fountain" width="320" height="260"></canvas></div>
+      <canvas
+        id="world" tabindex="0" title="방향키·WASD로 걷기 · Shift를 누른 채 이동하면 달리기"
+        aria-label="일청담 광장. 바닥을 누르거나 방향키로 이동"
+      ></canvas>
+      <div id="gates" aria-label="장소 입구"></div>
+      <div class="map-hud">
+        <div id="notice" role="status"></div>
+        <nav class="play-tools" aria-label="캠퍼스 행동">
+          <button id="seat-list" hidden>자리 찾기</button><button id="act">캐릭터 행동</button>
+        </nav>
+      </div>
+      <button id="quick-jump" aria-label="점프" aria-keyshortcuts="Space" title="점프 · Space"><img src="/icons/jump.png" alt=""><span class="action-copy"><small class="action-detail" hidden></small><span class="action-verb">점프</span></span><kbd aria-hidden="true">SPACE</kbd></button>
+      <div id="stick" aria-hidden="true"><i></i></div>
+      <ol id="log" aria-label="광장 대화" aria-live="polite"></ol>
+    </main>
+    <footer>
+      <nav class="campus-dock" aria-label="내 캠퍼스">
+        <button id="study">공부</button><button id="records">기록</button><button id="profile" aria-label="옷장과 닉네임">옷장</button>
+      </nav>
+      <form id="chat">
+        <input
+          id="message"
+          aria-label="메시지"
+          placeholder="광장에 한마디"
+          maxlength="160"
+          enterkeyhint="send" autocomplete="off"
+        /><button>보내기</button>
+      </form>
+    </footer>
+    <dialog id="panel" aria-labelledby="panel-title">
+      <div class="panel-head">
+        <h2 id="panel-title"></h2>
+        <form method="dialog">
+          <button class="close" aria-label="닫기"><img src="/skins/close.png" alt=""></button>
+        </form>
+      </div>
+      <section id="panelbody"></section>
+      <div id="profile-footer" class="wardrobe-commit" hidden></div>
+    </dialog>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
