@@ -6,6 +6,15 @@ export function actionInProgress(at, epoch, duration) {
   return at > 0 && epoch >= at && epoch - at < duration;
 }
 
+// The short reading gesture repeats every 5.2 s. A stationary web canvas
+// can sleep until the next distinct sprite instead of repainting every frame.
+export function studyFrameTiming(count,start,now){
+  const phase=Math.max(0,now-start)%5200;
+  return phase<count*250
+    ? {frame:Math.floor(phase/250),nextAt:now+250-phase%250}
+    : {frame:0,nextAt:now+5200-phase};
+}
+
 export function selectStudentFrame(rows, {
   facing = 'south', motion = 'idle', walkTime = 0, waveAt = 0, jumpAt = 0, hitAt = 0, bumpUntil = 0,
   knockback = false, studying = false, studyAt = 0, studyPaused = false, epoch = 0, reduced = false
@@ -16,9 +25,8 @@ export function selectStudentFrame(rows, {
   if (studying) {
     const frames = rows.study_south;
     if (!frames?.length) return idle;
-    const phase = Math.max(0, epoch - studyAt) % 5200;
-    const reading = !reduced && !studyPaused && phase < frames.length * 250;
-    return { pose: 'study_south', frame: reading ? Math.floor(phase / 250) : 0, lift: 0 };
+    const frame=reduced||studyPaused?0:studyFrameTiming(frames.length,studyAt,epoch).frame;
+    return { pose:'study_south',frame,lift:0 };
   }
 
   if (jumpAt > hitAt && actionInProgress(jumpAt, epoch, STUDENT_ACTION.jumpDuration)) {

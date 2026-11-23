@@ -7,7 +7,8 @@ import {Ambient} from "../public/campus/ambient.js";
 import {decorate,iconUrl} from "./pixel-icons.js";
 import {tables,chairs as libraryChairs,drawFurniture,drawChair} from "./lounge.js";
 import {showSpaceAction,createPortal,onPortalSurface,drawEntrance, signOffset, signFace, exitCameraX, doorOffset} from "../public/campus/wayfinding.js";
-import { selectStudentFrame, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
+import { selectStudentFrame, studyFrameTiming, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
+import {CHECK_MS} from "../public/campus/study-time.js";
 import { ImageCache } from "../public/campus/scene-images.js";
 import {chatScroll} from "../public/campus/chat-scroll.js";
 import { addInstallOption } from "./install.js";
@@ -82,6 +83,9 @@ let status = "친구 찾는 중",
   dirty = true,
   wasWalking = false,
   panelMode = "";
+let nextStudyPaint=Infinity,studyDeadlineTimer;
+const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)");
+reducedMotion.addEventListener("change",()=>{dirty=true;});
 const bubbles=new Map();
 function chatBubble(id,text){
   const entry={text};
@@ -132,7 +136,8 @@ function initialBackdrop(){
   });
 }
 initialBackdrop();
-const impacts=new Impacts(landscape);impacts.accept([],Date.now());
+const foreground=$("web-effects"),impacts=new Impacts(foreground);impacts.accept([],Date.now());
+let canopyOverActor=false,paintedCanopyFrame=-1;
 let lastHit=0,lastSwing=0,playful=true;
 try{playful=localStorage.getItem("knu-playful")!=="off";}catch{}
 function canBump(p){return p.seat==null&&!p.studying&&p.playful!==false&&SCENES[p.scene]?.play;}
@@ -453,6 +458,7 @@ function currentPose() {
     t: "pose",
     scene: self.scene,
     inClass:self.inClass,
+    reading:self.reading===true&&Date.now()<self.studyAt+CHECK_MS,
     playful,bumpSlot:self.action==="bump"?self.bumpSlot:null,calendar:sharedCalendar(self.calendar),chair:self.seat,seat:null,studying:!!self.studying,style:self.style||null,
     crouch: self.crouch,
     seq: self.seq,
@@ -522,6 +528,8 @@ const mesh = new PlazaMesh(
           seatedAt:previous && previous.seat === (d.chair ?? null) ? previous.seatedAt : performance.now(),
           scene,
           inClass:canAttendClass(scene)&&d.inClass===true,
+          reading:d.studying===true&&d.reading===true,
+          studyAt:previous?.reading?previous.studyAt:Date.now(),
           seat:
             seatedPose ? d.chair : null,
           crouch: d.crouch === true,
@@ -627,6 +635,8 @@ function paint(now) {
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * x, dpr * y);
   ctx.imageSmoothingEnabled = false;
   landscape.style.transform="translate("+x+"px,"+y+"px) scale("+scale+")";
+  foreground.style.transform=landscape.style.transform;
+  canopyOverActor=false;paintedCanopyFrame=ambient.frame;
   ctx.clearRect(-x/scale,-y/scale,w/scale,h/scale);
   const markedSeat = approachingSeat!==null ? desks[approachingSeat] : action?.seat;
   if(markedSeat){
@@ -663,8 +673,8 @@ function paint(now) {
   );
   const objects = self.scene === "lounge" ? [...actors, ...tables, ...libraryChairs.filter(c=>c.table.kind!=="sofa")]
     : self.scene === "lecture" ? [...actors, ...lectureDesks, ...desks.filter(c=>c.scene==="lecture")] : [...actors,...benches.filter(t=>t.scene===self.scene && (t.kind==="bench" || t.rail))];
-  const epoch = Date.now(),
-    reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const epoch = Date.now(),reduced=reducedMotion.matches;
+  nextStudyPaint=Infinity;
   const depth=p=>p.rail?Math.max(...p.seats.map(s=>s.y))+1:p.seat!=null?desks[p.seat].y+0.5:p.y;
   for (const p of objects.sort((a,b)=>depth(a)-depth(b))) {
     if(p.rail){
@@ -689,7 +699,8 @@ function paint(now) {
       state = selectStudentFrame(rows, {
         facing: p.seat != null ? desks[p.seat]?.facing || "south" : p.facing,
         motion: walking ? "walk" : "idle",
-        studying:p.studying && !walking && !(p.action==="jump" && actionInProgress(p.at,epoch,STUDENT_ACTION.jumpDuration)),studyPaused:true,
+        studying:p.studying && !walking && !(p.action==="jump" && actionInProgress(p.at,epoch,STUDENT_ACTION.jumpDuration)),
+        studyAt:p.studyAt,studyPaused:!p.reading,
         walkTime: now / 1000 * ((p===self?keys.has("shift"):p.running)?1.5:1),
         jumpAt: p.action === "jump" ? p.at : 0,
         waveAt: p.action === "wave" ? p.at : 0,
@@ -698,6 +709,8 @@ function paint(now) {
       }),
       r = rows[state.pose][state.frame],
       img = portrait(p);
+    if(state.pose==="study_south" && p.reading && !reduced)
+      nextStudyPaint=Math.min(nextStudyPaint,studyFrameTiming(rows.study_south.length,p.studyAt,epoch).nextAt);
     const age = epoch - p.at;
     const bob =
       !reduced && p.action === "cheer" && age >= 0 && age < 700
@@ -717,6 +730,9 @@ function paint(now) {
       drawStudentSprite(ctx,img,r,{avatar:p.avatar,pose:state.pose,crouch:p.crouch,seated,
         x:center,feet,scale:CAMPUS_SPRITE_SCALE});
       if(chair?.chair && chair.facing==="north")drawChair(ctx,chair,loungeArt,true);
+      const top=feet-r.h*CAMPUS_SPRITE_SCALE;
+      // The widest wave frame is 120% of the base sprite.
+      if(ambient.coverActor(ctx,depth(p),center-64,top,128,Math.max(feet,p.y)-top+2))canopyOverActor=true;
     }
     ctx.font = "700 "+Math.max(16,Math.min(23,14/scale))+"px Pixel, sans-serif";
     ctx.textAlign = "center";
@@ -762,6 +778,8 @@ stick.onpointermove=moveStick;
 stick.onpointerup=stick.onpointercancel=stick.onlostpointercapture=e=>{if(e.pointerId===pad.pointer)resetStick();};
 function frame(now) {
   if (document.hidden) return;
+  const epoch=Date.now();
+  if(self.reading && epoch>=self.studyAt+CHECK_MS){self.reading=false;announcePose();}
   environmentalEffects(now);
   if(opening){
     const progress=opening.animate?Math.min(1,Math.max(0,(now-opening.start-210)/200)):1;
@@ -833,7 +851,7 @@ function frame(now) {
     lastSend = now;
   }
   if (
-    dirty ||
+    dirty || epoch>=nextStudyPaint || (canopyOverActor&&paintedCanopyFrame!==ambient.frame) ||
     moved ||
     change ||
     [self, ...peers.values()].some(
@@ -1296,11 +1314,19 @@ const saveAppearance=attachStudy({button:$("study"),profile:self,legacyAppearanc
 },rankings:()=>[self,...peers.values()]
   .filter(p=>sharedCalendar(p.calendar))
   .map(p=>({name:p.name,minutes:p.calendar.days.reduce((sum,n)=>sum+n,0)}))
-  .sort((a,b)=>b.minutes-a.minutes),onStatus:(studying,totals,calendar)=>{
-  const changed=JSON.stringify(calendar)!==JSON.stringify(self.calendar);
+  .sort((a,b)=>b.minutes-a.minutes),onStatus:(startedAt,totals,calendar)=>{
+  const studying=startedAt!==null,reading=studying&&Date.now()<startedAt+CHECK_MS;
+  const changed=JSON.stringify(calendar)!==JSON.stringify(self.calendar)||self.studyAt!==startedAt||self.reading!==reading;
   self.calendar=calendar;
   rewardMs=totals.rewardMs;owned=totals.ownedItemIds;
-  if(changed||self.studying!==studying){self.studying=studying;announcePose();}
+  if(changed){
+    clearTimeout(studyDeadlineTimer);
+    Object.assign(self,{studying,reading,studyAt:startedAt});
+    if(reading)studyDeadlineTimer=setTimeout(()=>{
+      if(self.reading){self.reading=false;announcePose();}
+    },Math.max(0,startedAt+CHECK_MS-Date.now()));
+    announcePose();
+  }
 }});
 if(meetupRoom)void meetups.initialize();
 window.addEventListener('hashchange',event=>{

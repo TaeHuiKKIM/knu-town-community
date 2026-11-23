@@ -16,7 +16,7 @@ export function attachStudy({button,profile,legacyAppearance,panel,add,onStatus,
     book=next;
     button.textContent=book.active?"공부 중":"공부";
     const month=monthKey();
-    onStatus(!!book.active,summary(book.archive),sharing?{month,days:dailyStudy(book.archive.records,month).map(ms=>Math.floor(ms/60000))}:null);
+    onStatus(book.active?.from??null,summary(book.archive),sharing?{month,days:dailyStudy(book.archive.records,month).map(ms=>Math.floor(ms/60000))}:null);
     onAppearance(book.archive.profile);
   };
   async function read(){

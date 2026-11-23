@@ -272,7 +272,8 @@ footer form button{flex:none;white-space:nowrap}
 
 #web-fountain[hidden]{display:none}
 
-#landscape .impact{width:128px;height:128px;z-index:1100}
+#web-effects{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;pointer-events:none}
+#web-effects .impact{position:absolute;width:128px;height:128px;image-rendering:pixelated;pointer-events:none}
 .campus-dock{display:flex;align-items:center;gap:5px}
 .campus-dock button{min-width:66px;white-space:nowrap}
 #profile{max-width:none}

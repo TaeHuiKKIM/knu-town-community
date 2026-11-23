@@ -10,6 +10,7 @@
     "check:input": "node check-campus-input.mjs",
     "check:chairs": "node check-chair-art.mjs",
     "check:class": "node check-class.mjs",
+    "check:render": "node check-world-render.mjs",
     "check:chat": "node check-chat-scroll.mjs",
     "check:install": "node check-install.mjs",
     "check:journeys": "node check-campus-journeys.mjs"

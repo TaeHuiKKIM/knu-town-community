@@ -95,6 +95,7 @@ export default async function rendezvous(req, res) {
           w: a.w === true,run:a.w===true && a.run===true,
           scene,
           inClass:canAttendClass(scene)&&a.inClass===true,
+          reading:a.studying===true&&a.reading===true,
           chair:Number.isInteger(a.chair)&&campusSeats[a.chair]?.scene===scene?a.chair:null,
           seat:
             Number.isInteger(a.seat) && a.seat >= 0 && a.seat < 12
