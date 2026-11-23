@@ -1,10 +1,11 @@
 import { createStudyServer, localAddresses } from './src/server.mjs';
+import { createRequestLogger } from './src/request-log.mjs';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const port = Number(process.env.PORT || 4183);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT must be 1024–65535');
 mkdirSync(new URL('.runtime/',import.meta.url),{recursive:true});
-const server = createStudyServer({hub:true,roomCode:'main',studyPath:fileURLToPath(new URL('.runtime/study.sqlite',import.meta.url)), onRequest: ({ method, kind, remote }) => console.log(`[request] ${new Date().toISOString()} ${remote} ${method} ${kind}`) });
+const server = createStudyServer({hub:true,roomCode:'main',studyPath:fileURLToPath(new URL('.runtime/study.sqlite',import.meta.url)), onRequest:createRequestLogger() });
 const bindAddress = process.env.STUDY_BIND || '0.0.0.0';
 server.listen(port, bindAddress, () => {
   console.log('LAN Study Room · leave this process running');

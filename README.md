@@ -10,6 +10,8 @@
 
 ## 노트북으로 첫 방 열기
 
+오래 열어 두는 방장은 친구가 입장할 때 필요한 진단 기록만 남깁니다. [방장의 접속 로그](docs/operations.md#방장의-접속-로그)
+
 **Windows에서 더블클릭으로 열기**
 
 1. 방장 PC에 [Node.js 22.17 이상](https://nodejs.org/)을 설치하고 [게임 ZIP](https://github.com/TaeHuiKKIM/knu-town-community/archive/refs/heads/main.zip)을 풀어 주세요.
