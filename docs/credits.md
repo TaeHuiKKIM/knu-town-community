@@ -9,6 +9,7 @@
 | [장면 이미지](../design/stage1/assets) | 본관과 일청담, 은행나무길, 도서관, IT대학 건물·강의실의 게임용 픽셀 그림 |
 | [기본 아바타](../public/campus/sprites) · [의상 시트](../design/character-v3) | 팀이 방향·동작별로 생성하고 선별한 투명 PNG와 애니메이션 좌표 |
 | [아이콘](../design/stage1/assets/icons) · [가구](../design/stage1/assets/lounge) · [UI 스킨](../design/stage1/assets/skins) | 게임의 말풍선·버튼·행동·좌석을 나타내도록 제작한 이미지 |
+| [강의실 가구](../design/stage1/assets/lecture) | 팀이 만든 투명 가구 시트에서 흰 책상과 의자 앞·뒤를 분리해 사용한 이미지 |
 
 교내 풍경을 참고할 때는 경북대학교 사진 자료와 중앙도서관 안내를 이용했다. 예를 들어 도서관의 북갤러리·휴식 마루·스마트기기존은 공식 사이버투어에서 설명한다. 각 링크의 외부 사진과 안내문은 해당 제공자의 자료다. [경북대학교 사진자료](https://photo.knu.ac.kr/) · [경북대학교 중앙도서관 사이버투어](https://kudos.knu.ac.kr/cybertour/tour03.htm) · [경북대학교 컴퓨터학부](https://cse.knu.ac.kr/)
 

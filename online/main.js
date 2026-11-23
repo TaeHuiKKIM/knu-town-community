@@ -15,7 +15,7 @@ import { gateRoute } from "./gate-route.js";
 import {attachStudy} from "./study-ui.js";
 import {COAT_LABELS,STUDY_STYLES,canWearStyle,outfitName,styleForAvatar} from "../public/campus/wardrobe.js";
 import {seatedFeetOffset,seatApproach,seatAtPoint,nearbyUse,closestFriend,portalActionLabel} from "../public/campus/furniture.js";
-import {benches,campusSeats as desks} from "./campus-seats.js";
+import {benches,lectureDesks,campusSeats as desks} from "./campus-seats.js";
 let rewardMs=0, owned=[];
 import QRCode from "qrcode";
 import {isMeetupInvite} from "./meetup-link.js";
@@ -101,6 +101,7 @@ const sceneImages=new ImageCache();
 let displayedImage=null, warmedGate=null;
 const reactions=Object.fromEntries(["wave","cheer","heart","coffee","idea"].map(key=>[key,scenery(iconUrl(key))]));
 const loungeArt=Object.fromEntries(["desk","long-table","round-table","sofa","chair-back","chair-front"].map(key=>[key,scenery("/lounge/"+key+".png")]));
+Object.assign(loungeArt,{"lecture-desk":scenery("/lecture/desk.png"),"lecture-chair-back":scenery("/lecture/chair-back.png"),"lecture-chair-front":scenery("/lecture/chair-front.png")});
 for(const [id,key] of Object.entries({place:"map",invite:"invite",network:"friends",study:"study",act:"wave",profile:"outfit",records:"records","seat-list":"seat"}))decorate($(id),key);
 decorate($("chat").querySelector("button"),"chat");
 const landscape=$("landscape"), water=fountain($("web-fountain")), ambient=new Ambient($("web-ambient"),landscape);
@@ -645,7 +646,8 @@ function paint(now) {
   const actors = [...peers.values(), self].filter(
     (p) => p.scene === self.scene,
   );
-  const objects = self.scene === "lounge" ? [...actors, ...tables, ...libraryChairs.filter(c=>c.table.kind!=="sofa")] : [...actors,...benches.filter(t=>t.scene===self.scene && (t.kind==="bench" || t.rail))];
+  const objects = self.scene === "lounge" ? [...actors, ...tables, ...libraryChairs.filter(c=>c.table.kind!=="sofa")]
+    : self.scene === "lecture" ? [...actors, ...lectureDesks, ...desks.filter(c=>c.scene==="lecture")] : [...actors,...benches.filter(t=>t.scene===self.scene && (t.kind==="bench" || t.rail))];
   const epoch = Date.now(),
     reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const depth=p=>p.rail?Math.max(...p.seats.map(s=>s.y))+1:p.seat!=null?desks[p.seat].y+0.5:p.y;
@@ -663,7 +665,7 @@ function paint(now) {
       continue;
     }
     if(p.table){drawChair(ctx,p,loungeArt);continue;}
-    if (tables.includes(p)) {
+    if (tables.includes(p) || lectureDesks.includes(p)) {
       drawFurniture(ctx,p,loungeArt);
       continue;
     }

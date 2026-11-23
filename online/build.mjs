@@ -43,13 +43,15 @@ const files = {
   "../design/stage1/assets/Galmuri11.woff2": "pixel.woff2",
   "../design/stage1/assets/LICENSE.txt": "font-license.txt",
 };
-for(const folder of ["icons","lounge","skins","panels","previews"]) await mkdir(path.join(out,folder),{recursive:true});
+for(const folder of ["icons","lounge","lecture","skins","panels","previews"]) await mkdir(path.join(out,folder),{recursive:true});
 // Keep each destination card and backdrop on the same campus art revision as LAN.
 for(const scene of Object.values(SCENES)){
   files["../design/stage1/assets/previews/"+scene.id+".png"]="previews/"+scene.id+".png";
   const filename=scene.image.split("/").at(-1);
   files["../design/stage1/assets/"+filename]=(scene.id==="lounge"?"library":scene.id)+".png";
 }
+for(const name of ["desk","chair-back","chair-front"])
+  files["../design/stage1/assets/lecture/"+name+".png"]="lecture/"+name+".png";
 for(const name of ["notebook","archive","jacket","tutor","fitting-room"])
   files["../design/stage1/assets/panels/"+name+".png"]="panels/"+name+".png";
 for(const name of ["header-bar","dock-bar","sign-plate","close","frame-parchment","frame-mulberry","frame-sage","frame-stone","tick-off","tick-on","button-paper","button-wine","button-muted","control-paper","control-wine","control-inset","control-muted","name-own","name-friend","speech-paper","stick-base","stick-cap"])

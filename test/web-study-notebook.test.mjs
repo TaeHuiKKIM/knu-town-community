@@ -81,6 +81,8 @@ test("web seat IDs keep library and outdoor seats from earlier clients in the sa
   assert.deepEqual(campusSeats.slice(0,30).map(s=>s.scene),Array(30).fill("lounge"));
   assert.deepEqual(campusSeats.slice(30,38).map(s=>s.table.id),
     ["plaza-west","plaza-west","plaza-south","plaza-south","ginkgo-west","ginkgo-west","ginkgo-east","ginkgo-east"]);
-  assert.equal(campusSeats.slice(38).length,12);
-  assert.ok(campusSeats.slice(38).every(s=>s.table.kind==="pond-bench"&&s.scene==="plaza"));
+  assert.ok(campusSeats.slice(38,50).every(s=>s.table.kind==="pond-bench"&&s.scene==="plaza"));
+  // IT4 강의실 24석은 기존 번호 뒤에 붙는다.
+  assert.equal(campusSeats.slice(50).length,24);
+  assert.ok(campusSeats.slice(50).every(s=>s.table.kind==="lecture-desk"&&s.scene==="lecture"));
 });
