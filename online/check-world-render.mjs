@@ -119,15 +119,31 @@ async function layers(){
     },{x:pose.x,y:pose.y,frame:STUDENTS.female.frame_layout.rows.idle_south[0]});
     assert.ok(match.overlap>200&&match.matched>match.overlap*.55,JSON.stringify(match));
     const target=directory.roster.find(p=>p.name==='친구');
-    await peer({x:target.pose.x+8,y:target.pose.y,seq:1,action:'bump',bumpSlot:target.slot});
-    await reader.locator('#web-effects .impact[data-rendered=true]').waitFor();
-    const above=await reader.evaluate(()=>{
-      const world=document.querySelector('#world'),fx=document.querySelector('#web-effects');
-      const gate=document.querySelector('#gates button');
-      return !!(world.compareDocumentPosition(fx)&Node.DOCUMENT_POSITION_FOLLOWING)&&getComputedStyle(fx).pointerEvents==='none'&&
-        fx.style.transform===document.querySelector('#landscape').style.transform&&!!gate;
+    // The entire effect lasts 380 ms. Capture the painted frame in the page
+    // before the peer acts, even when automation polls after it disappeared.
+    await reader.evaluate(()=>{
+      const host=document.querySelector('#web-effects'),world=document.querySelector('#world');
+      window.impactSample=null;
+      const observer=new MutationObserver(()=>{
+        const effect=host.querySelector('canvas.impact[data-rendered=true]');
+        if(!effect)return;
+        const bounds=effect.getBoundingClientRect(),pixel=effect.getContext('2d').getImageData(64,64,1,1).data;
+        window.impactSample={
+          center:[...pixel],
+          visible:effect.checkVisibility({checkVisibilityCSS:true,checkOpacity:true})&&bounds.width>0&&bounds.height>0,
+          foreground:!!(world.compareDocumentPosition(host)&Node.DOCUMENT_POSITION_FOLLOWING),
+          passesInput:getComputedStyle(host).pointerEvents==='none',
+          cameraAligned:host.style.transform===document.querySelector('#landscape').style.transform
+        };
+        observer.disconnect();
+      });
+      observer.observe(host,{childList:true,subtree:true,attributes:true,attributeFilter:['data-rendered']});
     });
-    assert.ok(above);
+    await peer({x:target.pose.x+8,y:target.pose.y,seq:1,action:'bump',bumpSlot:target.slot});
+    await reader.waitForFunction(()=>window.impactSample!==null);
+    assert.deepEqual(await reader.evaluate(()=>window.impactSample),{
+      center:[255,237,162,255],visible:true,foreground:true,passesInput:true,cameraAligned:true
+    });
     assert.equal(await reader.evaluate(()=>sawTreeFriend),true);
     await reader.emulateMedia({reducedMotion:'no-preference'});
     await reader.waitForFunction(()=>document.querySelector('.canopy-layer').style.transform.includes('rotate('));

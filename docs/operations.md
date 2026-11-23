@@ -48,6 +48,8 @@ npm start
 
 웹 배포에는 `npm --prefix online run build`로 만든 `online/dist`를 사용한다. 옷장의 기본 문의 버튼은 새 탭에서 이 저장소의 Issues를 연다. 별도 운영 메일을 안내하려면 빌드할 때 `KNU_SUPPORT_EMAIL`을 지정한다. 이 주소는 게임 화면에 공개된다.
 
+`npm --prefix online run check:render`는 독서 동작과 나뭇잎·타격 효과를 실제 브라우저에서 확인한다. `CAMPUS_WEB_ORIGIN`에 배포 주소를 지정하면 독서 검사는 그 사이트의 임시 방에서 실행한다. 짧은 타격 효과는 로컬 검사용 방에서 실제로 그려지는 순간을 포착한다.
+
 ```sh
 npm test
 node scripts/load-event-plaza.mjs 10
