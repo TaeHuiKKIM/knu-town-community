@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "node check-plaza.mjs",
-    "check:mobile": "node check-mobile-ui.mjs"
+    "check:mobile": "node check-mobile-ui.mjs",
+    "check:input": "node check-campus-input.mjs"
   },
   "dependencies": {
     "@vercel/functions": "3.11.3",

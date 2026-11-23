@@ -8,6 +8,7 @@ import {decorate,iconUrl} from "./pixel-icons.js";
 import {tables,chairs as libraryChairs,drawFurniture,drawChair} from "./lounge.js";
 import {showSpaceAction,createPortal,onPortalSurface,drawEntrance, signOffset, signFace, exitCameraX, doorOffset} from "../public/campus/wayfinding.js";
 import { selectStudentFrame, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
+import { ImageCache } from "../public/campus/scene-images.js";
 import { SCENES, sceneInfo, nearbyPortal, arrivalFrom } from "../public/campus/scenes.js";
 import { gateRoute } from "./gate-route.js";
 import {attachStudy} from "./study-ui.js";
@@ -20,7 +21,7 @@ import { PlazaMesh } from "./mesh.js";
 import {
   spawn,
   walkable,
-  directionFor,
+  directionFor, campusKey, campusKeyName, walkKeys,
   DIRECTIONS,
   COATS,
   AVATARS,
@@ -89,21 +90,38 @@ const benchArt=scenery("/campus-bench.png");
 const wayfinding=scenery("/wayfinding.png");
 let opening=null;
 const sceneArtUrl=id=>"/"+(id==="lounge"?"library":id)+".png";
-const sceneArt=new Map();
-function backdropFor(id){
-  if(!sceneArt.has(id))sceneArt.set(id,scenery(sceneArtUrl(id)));
-  return sceneArt.get(id);
-}
-const bg=backdropFor("plaza");
+const sceneImages=new ImageCache();
+let displayedImage=null, warmedGate=null;
 const reactions=Object.fromEntries(["wave","cheer","heart","coffee","idea"].map(key=>[key,scenery(iconUrl(key))]));
 const loungeArt=Object.fromEntries(["desk","long-table","round-table","sofa","chair-back","chair-front"].map(key=>[key,scenery("/lounge/"+key+".png")]));
 for(const [id,key] of Object.entries({place:"map",invite:"invite",network:"friends",study:"study",act:"wave",profile:"outfit",records:"records","seat-list":"seat"}))decorate($(id),key);
 decorate($("chat").querySelector("button"),"chat");
 const landscape=$("landscape"), water=fountain($("web-fountain")), ambient=new Ambient($("web-ambient"),landscape);
-let motionOn=true, powerSave=false, lastWater=-Infinity, currentBackdrop=null;
+let motionOn=true, powerSave=false, lastWater=-Infinity;
 try{motionOn=localStorage.getItem("knu-motion")!=="off";powerSave=localStorage.getItem("knu-power")==="on";}catch{}
 function applyMotion(){water.setEnabled(motionOn);ambient.setEnabled(motionOn);landscape.classList.toggle("still-portals",!motionOn);landscape.classList.toggle("slow-portals",powerSave);}
 applyMotion();
+function displayBackdrop(scene,image){
+  image.id="web-scene-art";image.alt="";image.draggable=false;
+  if(displayedImage!==image){
+    if(displayedImage)displayedImage.replaceWith(image);
+    else landscape.prepend(image);
+  }
+  displayedImage=image;
+  landscape.dataset.scene=scene;
+  $("web-fountain").hidden=scene!=="plaza";
+  ambient.configure(image,SCENES[scene]);
+  $("scene-art-retry").hidden=true;
+  dirty=true;
+}
+function initialBackdrop(){
+  sceneImages.load(sceneArtUrl("plaza")).then(image=>{
+    if(self.scene==="plaza"&&!displayedImage)displayBackdrop("plaza",image);
+  }).catch(()=>{
+    if(!displayedImage){const retry=$("scene-art-retry");retry.hidden=false;retry.onclick=initialBackdrop;}
+  });
+}
+initialBackdrop();
 const impacts=new Impacts(landscape);impacts.accept([],Date.now());
 let lastHit=0,lastSwing=0,playful=true;
 try{playful=localStorage.getItem("knu-playful")!=="off";}catch{}
@@ -117,7 +135,7 @@ function swing(){
 }
 function environmentalEffects(now){
   if(impacts.active.length)impacts.draw(Date.now());
-  if(currentBackdrop!==self.scene)return;
+  if(landscape.dataset.scene!==self.scene)return;
   ambient.draw(now,powerSave);
   if(self.scene==="plaza" && now-lastWater>=(powerSave?100:33)){
     water.draw(now);lastWater=now;
@@ -189,6 +207,7 @@ function showGates(){
       stopRoute();
       route=gateRoute(self,gate,(x,y)=>walkable(x,y,self.scene));
       if(!route.length)return;
+      sceneImages.warm(sceneArtUrl(gate.target));
       keys.clear();resetStick();destination=gate;target=route.shift();dirty=true;
       canvas.focus({preventScroll:true});
     };
@@ -207,13 +226,37 @@ $("place").onclick=()=>{
     choice.onclick=()=>{$("panel").close();sign.click();};
   }
 };
-function crossGate(gate) {
+function beginGate(gate,now) {
+  if(opening)return;
+  const origin=self.scene;
+  const animate=gate.target==="lounge"&&!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const trip={gate,start:now,x:self.x,y:self.y,animate,image:null};
+  opening=trip;stopRoute();keys.clear();resetStick();dirty=true;
+  $("scene-art-retry").hidden=true;
+  sceneImages.load(sceneArtUrl(gate.target)).then(image=>{
+    if(opening===trip && self.scene===origin)trip.image=image;
+  }).catch(()=>{
+    if(opening!==trip||self.scene!==origin)return;
+    opening=null;dirty=true;
+    const retry=$("scene-art-retry");retry.hidden=false;
+    retry.onclick=()=>{
+      if(self.scene!==origin)return;
+      if(Math.hypot(self.x-gate.x,self.y-gate.y)<=78)beginGate(gate,performance.now());
+      else gateButtons.get(gate)?.click();
+    };
+  });
+}
+function crossGate(gate,image) {
   const scene=gate.target, arrival=arrivalFrom(self.scene,scene);
+  displayBackdrop(scene,image);
   Object.assign(self,arrival,{scene,action:"",crouch:false});
   stopRoute();keys.clear();resetStick();wasWalking=false;
   $("seat-list").hidden=scene!=="lounge";
-  $("place").textContent=scene==="lounge"?"도서관 열람실":SCENES[scene].name;
-  canvas.setAttribute("aria-label",$("place").textContent+". 바닥을 눌러 이동");
+  const placeName=scene==="lounge"?"도서관 열람실":SCENES[scene].name;
+  $("place").textContent={lounge:"도서관",it:"융복합관",it4:"IT4호관"}[scene] || placeName;
+  $("place").title=placeName+" · 길 찾기";
+  $("place").setAttribute("aria-label",placeName+" · 현재 장소와 길 찾기");
+  canvas.setAttribute("aria-label",placeName+". 바닥을 눌러 이동");
   showGates();announcePose();
 }
 function seatLabel(index){
@@ -535,6 +578,7 @@ function paint(now) {
   jump.disabled=!!opening;
   showSpaceAction(jump,label,detail,iconUrl(icon),kind);
   const nearestGate=nearbyPortal(self.scene,self.x,self.y);
+  if(warmedGate!==nearestGate){warmedGate=nearestGate;if(nearestGate)sceneImages.warm(sceneArtUrl(nearestGate.target));}
   for (const [gate, button] of gateButtons) {
     button.classList.toggle("near",nearestGate===gate);
     portalArt.get(gate).classList.toggle("is-near",nearestGate===gate);
@@ -554,14 +598,6 @@ function paint(now) {
   }
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * x, dpr * y);
   ctx.imageSmoothingEnabled = false;
-  const backdrop = backdropFor(self.scene);
-  if(currentBackdrop!==self.scene){
-    landscape.style.backgroundImage='url("'+backdrop.src+'")';
-    $("web-fountain").hidden=self.scene!=="plaza";
-    if(backdrop.naturalWidth){
-      ambient.configure(backdrop,SCENES[self.scene]);currentBackdrop=self.scene;
-    }
-  }
   landscape.style.transform="translate("+x+"px,"+y+"px) scale("+scale+")";
   ctx.clearRect(-x/scale,-y/scale,w/scale,h/scale);
   const markedSeat = approachingSeat!==null ? desks[approachingSeat] : action?.seat;
@@ -578,7 +614,7 @@ function paint(now) {
   }
   for(const gate of SCENES[self.scene].portals){
     ctx.save();ctx.translate(gate.x,gate.y);
-    drawEntrance(ctx,wayfinding,self.scene,gate,opening?.gate===gate?Math.min(1,(now-opening.start)/280):0,false);
+    drawEntrance(ctx,wayfinding,self.scene,gate,opening?.animate&&opening.gate===gate?Math.min(1,(now-opening.start)/280):0,false);
     ctx.restore();
   }
   const actors = [...peers.values(), self].filter(
@@ -590,10 +626,10 @@ function paint(now) {
   const depth=p=>p.rail?Math.max(...p.seats.map(s=>s.y))+1:p.seat!=null?desks[p.seat].y+0.5:p.y;
   for (const p of objects.sort((a,b)=>depth(a)-depth(b))) {
     if(p.rail){
-      if(bg.naturalWidth){
+      if(displayedImage?.naturalWidth && self.scene==="plaza"){
         ctx.save();ctx.beginPath();
         p.rail.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
-        ctx.closePath();ctx.clip();ctx.drawImage(bg,0,0,1536,1024);ctx.restore();
+        ctx.closePath();ctx.clip();ctx.drawImage(displayedImage,0,0,1536,1024);ctx.restore();
       }
       continue;
     }
@@ -627,7 +663,7 @@ function paint(now) {
         : 0;
     const seated = p.seat == null ? 0 : reduced ? 1 : Math.min(1,Math.max(0,(now-(p.seatedAt ?? 0))/240));
     const height = (r.h - poseInset(p.crouch,seated)) * CAMPUS_SPRITE_SCALE,
-      feet = (p.seat!=null ? p.y+(desks[p.seat].y+seatedFeetOffset(desks[p.seat])-p.y)*seated : p.y) - state.lift - bob + (p===self && opening ? doorOffset(self.scene)*Math.min(1,Math.max(0,(now-opening.start-210)/200)) : 0);
+      feet = (p.seat!=null ? p.y+(desks[p.seat].y+seatedFeetOffset(desks[p.seat])-p.y)*seated : p.y) - state.lift - bob + (p===self && opening?.animate ? doorOffset(self.scene)*Math.min(1,Math.max(0,(now-opening.start-210)/200)) : 0);
     const chair = p.seat != null ? desks[p.seat] : null;
     const center = chair ? p.x+(chair.x-p.x)*seated : p.x;
     if(img.naturalWidth && !chair){
@@ -640,7 +676,7 @@ function paint(now) {
         x:center,feet,scale:CAMPUS_SPRITE_SCALE});
       if(chair?.chair && chair.facing==="north")drawChair(ctx,chair,loungeArt,true);
     }
-    ctx.font = "500 "+Math.max(16,Math.min(21,13/scale))+"px Pixel, sans-serif";
+    ctx.font = "700 "+Math.max(16,Math.min(23,14/scale))+"px Pixel, sans-serif";
     ctx.textAlign = "center";
     const emote=Object.hasOwn(reactions,p.action)?reactions[p.action]:null;
     if(emote?.naturalWidth && age>=0 && age<1700){
@@ -652,7 +688,7 @@ function paint(now) {
       (p === self ? " · 나" : "");
     const width = ctx.measureText(label).width + 20;
     drawPlate(p===self?"name-own":"name-friend",center,feet-height-27,width,27);
-    ctx.fillStyle = "#402e30";
+    ctx.fillStyle = "#342323";
     ctx.fillText(label, center, feet - height - 7);
     const bubble=bubbles.get(p===self?"me":p.slot);
     if(bubble){
@@ -686,10 +722,10 @@ function frame(now) {
   if (document.hidden) return;
   environmentalEffects(now);
   if(opening){
-    const progress=Math.min(1,Math.max(0,(now-opening.start-210)/200));
+    const progress=opening.animate?Math.min(1,Math.max(0,(now-opening.start-210)/200)):1;
     self.x=opening.x+(opening.gate.x-opening.x)*progress;
     self.y=opening.y+(opening.gate.y-opening.y)*progress;
-    if(progress===1){const gate=opening.gate;opening=null;crossGate(gate);}
+    if(progress===1&&opening.image){const {gate,image}=opening;opening=null;crossGate(gate,image);}
     paint(now);lastFrame=now;frameId=requestAnimationFrame(frame);return;
   }
   const dt = Math.min((now - lastFrame) / 1000, 0.06);
@@ -745,10 +781,7 @@ function frame(now) {
   }
   const gate=moved && approachingSeat===null && SCENES[self.scene].portals.find(g=>(!destination||g===destination)&&Math.hypot(g.x-self.x,g.y-self.y)<=22);
   if(gate){
-    if(gate.target==="lounge"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){
-      opening={gate,start:now,x:self.x,y:self.y};
-      stopRoute();keys.clear();
-    }else crossGate(gate);
+    beginGate(gate,now);
     moved=false;
   }
   const change = moved !== wasWalking;
@@ -814,48 +847,39 @@ onkeydown = (e) => {
   if(e.target===$("message") && e.key==="Escape" && !e.isComposing){
     canvas.focus({preventScroll:true});return;
   }
-  if (e.isComposing || e.keyCode === 229 || e.target.isContentEditable) return;
-  if(e.key==="Shift" && !$("panel").open && !e.target.matches("input,textarea,select")){
+  const key=campusKey(e);
+  if(!key || $("panel").open)return;
+  if(key==="shift"){
     keys.add("shift");return;
   }
-  if(e.key.toLowerCase()==="f" && !e.repeat && !$("panel").open && (e.target===canvas || e.target===document.body)){swing();return;}
-  if(e.key==="Enter" && !$("panel").open && (e.target===canvas || e.target===document.body)){
+  if(key==="f" && !e.repeat && (e.target===canvas || e.target===document.body)){swing();return;}
+  if(key==="enter" && (e.target===canvas || e.target===document.body)){
     e.preventDefault();$("message").focus();return;
   }
   if (
-    !$("panel").open &&
-    !e.target.matches("input,textarea,select") &&
-    !e.ctrlKey &&
-    !e.metaKey &&
-    !e.altKey &&
-    (e.key !== " " || !tabNavigation || !e.target.closest("button,a,summary")) &&
-    [" ", "j", "c"].includes(e.key.toLowerCase())
+    (key !== " " || !tabNavigation || !e.target.closest?.("button,a,summary")) &&
+    [" ", "j", "c"].includes(key)
   ) {
     e.preventDefault();
-    if(!e.repeat){if(e.key===" ")interact();else perform(e.key.toLowerCase()==="c"?"crouch":"jump");}
+    if(!e.repeat){if(key===" ")interact();else perform(key==="c"?"crouch":"jump");}
     return;
   }
-  if (
-    $("panel").open ||
-    e.target.matches("input,select") ||
-    ![
-      "w",
-      "a",
-      "s",
-      "d",
-      "arrowup",
-      "arrowdown",
-      "arrowleft",
-      "arrowright",
-    ].includes(e.key.toLowerCase())
-  )
-    return;
+  const direction=walkKeys.get(key);
+  if(!direction || self.seat!==null)return;
   e.preventDefault();
-  if(e.repeat && (approachingSeat!==null || destination) && !keys.has(e.key.toLowerCase()))return;
+  if(e.repeat && (approachingSeat!==null || destination) && !keys.has(key))return;
   tabNavigation=false;canvas.focus({preventScroll:true});
-  keys.add(e.key.toLowerCase());
+  if(!e.repeat && !keys.has(key)){
+    stopRoute();
+    const [dx,dy]=direction, x=self.x+dx*4, y=self.y+dy*4;
+    if(walkable(x,y,self.scene)){
+      self.x=x;self.y=y;self.facing=directionFor(dx,dy,self.facing);self.crouch=false;
+      dirty=true;if(slot)sendPose();
+    }
+  }
+  keys.add(key);
 };
-onkeyup = (e) => keys.delete(e.key.toLowerCase());
+onkeyup = (e) => keys.delete(campusKeyName(e));
 onblur = () => {
   resetStick();
   keys.clear();

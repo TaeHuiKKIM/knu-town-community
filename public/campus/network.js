@@ -1,5 +1,6 @@
 export function latestSender(send, onError = () => {}) {
   let pending = null, busy = false;
+  const waiting = [];
   async function flush() {
     if (busy) return;
     busy = true;
@@ -8,9 +9,16 @@ export function latestSender(send, onError = () => {}) {
         const value = pending; pending = null;
         try { await send(value); } catch (error) { onError(error); }
       }
-    } finally { busy = false; }
+    } finally {
+      busy = false;
+      for (const resolve of waiting.splice(0)) resolve();
+    }
   }
-  return { push(value) { pending = value; void flush(); }, clear() { pending = null; } };
+  return {
+    push(value) { pending = value; void flush(); },
+    clear() { pending = null; },
+    whenIdle() { return busy ? new Promise(resolve => waiting.push(resolve)) : Promise.resolve(); }
+  };
 }
 
 export const saved = {

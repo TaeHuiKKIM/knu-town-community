@@ -21,3 +21,19 @@ test('a stalled image times out, leaves the cache, and a retry can load successf
   await assert.rejects(failed,/배경/);
   const retry=cache.load('map.png');assert.equal(created.length,2);created[1].onload();assert.equal(await retry,created[1]);
 });
+test('the scene cache waits for decoded pixels, limits speculation to one image and evicts old entries',async()=>{
+  const made=[];
+  const cache=new ImageCache(()=>{const image={};made.push(image);return image;},1500,2);
+  cache.warm('lounge');cache.warm('lecture');
+  assert.equal(made.length,1);
+  let decode,finished=false;
+  made[0].decode=()=>new Promise(resolve=>{decode=resolve;});
+  const first=cache.load('lounge').then(()=>{finished=true;});made[0].onload();
+  await Promise.resolve();assert.equal(finished,false);
+  decode();await first;
+  for(const id of ['it','it4']){const item=cache.load(id);made.at(-1).onload();await item;}
+  assert.equal(cache.pending.has('lounge'),false);
+  const broken=cache.load('lecture');made.at(-1).decode=()=>Promise.reject(Error('decode'));
+  made.at(-1).onload();await assert.rejects(broken,/배경/);
+  const recovered=cache.load('lecture');made.at(-1).onload();await recovered;
+});

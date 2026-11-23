@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { studyStyle, styleLayout } from '../public/campus/wardrobe.js';
 
-const client = new Set(['app.js', 'network.js', 'local-data.js', 'local-vault.js', 'local-sync.js', 'local-checkpoint.js', 'local-ui.js', 'local.css', 'world.js', 'terrain.js', 'scenes.js', 'furniture.js', 'scene-view.js', 'wayfinding.js', 'ambient.js', 'world.css', 'play.js', 'impact.js', 'study.js', 'study-time.js', 'study-calendar.js', 'spaces.js', 'study.css', 'live.css', 'ui.css', 'skin.css', 'avatar.js', 'wardrobe.js', 'wardrobe-ui.js', 'student-motion.js', 'effects.js', 'tutor.js', 'tutor.css', 'sprites/data.js']);
+const client = new Set(['app.js', 'network.js', 'local-data.js', 'local-vault.js', 'local-sync.js', 'local-checkpoint.js', 'local-ui.js', 'local.css', 'world.js', 'terrain.js', 'scenes.js', 'furniture.js', 'scene-view.js', 'scene-images.js', 'wayfinding.js', 'ambient.js', 'world.css', 'play.js', 'impact.js', 'study.js', 'study-time.js', 'study-calendar.js', 'spaces.js', 'study.css', 'live.css', 'ui.css', 'skin.css', 'avatar.js', 'wardrobe.js', 'wardrobe-ui.js', 'student-motion.js', 'effects.js', 'tutor.js', 'tutor.css', 'sprites/data.js']);
 const design = new Set(['style.css', 'pixel-ui.css', 'assets/interface.css', 'assets/sprite-data.js', 'assets/directional/data.js']);
 const types = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.woff2': 'font/woff2' };
 const styles = new Map();

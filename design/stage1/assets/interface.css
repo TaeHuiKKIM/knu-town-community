@@ -266,3 +266,113 @@ body>footer{border:0;border-top:6px solid transparent;border-image:url(skins/doc
   width:100%;min-height:48px;margin:0;padding-inline:8px;text-align:start;
 }
 #panel .shop-offers button::before{flex:none;margin:0}
+
+/* Reserve room for the whole illustrated frame, including the phone's safe area. */
+body.campus-game .app{grid-template-rows:auto minmax(0,1fr) auto}
+body.campus-game .topbar,body:not(.campus-game)>header{
+  padding-top:calc(clamp(5px,1vh,10px) + env(safe-area-inset-top,0px));
+  padding-bottom:clamp(5px,1vh,10px);
+}
+body.campus-game .bottom-dock,body:not(.campus-game)>footer{
+  padding-top:clamp(6px,1vh,10px);
+  padding-bottom:calc(clamp(6px,1vh,10px) + env(safe-area-inset-bottom,0px));
+}
+body.campus-game .topbar .brand-copy .place{color:#4f4032}
+body.campus-game .actor .name-tag{font-weight:700;color:#382a24}
+body.campus-game .actor .name-tag.own{color:#562234}
+body.campus-game .map-actions{
+  position:absolute;z-index:4;top:12px;right:12px;display:flex;align-items:start;gap:6px;
+}
+body.campus-game .map-actions .gesture-toggle{position:static}
+#find-seat{
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  min-height:44px;padding:2px 6px;color:#382a24;background:transparent;
+  border:7px solid transparent;border-image:var(--ui-paper) 8 fill stretch;
+  font-size:14px;font-weight:700;
+}
+#find-seat[hidden]{display:none}
+#find-seat img{width:22px;height:22px}
+#seat-dialog .dialog-body{display:grid;gap:8px}
+#seat-dialog label{margin-top:4px;font-weight:700}
+#seat-options{width:100%;min-height:44px;padding:6px 9px;background:#fff9e9;color:#382a24;font:inherit}
+body.campus-game .scene-actions button .action-detail,#quick-jump .action-detail{color:inherit}
+@media(max-width:640px){
+  body.campus-game .map-actions{top:10px;right:8px;gap:4px}
+  body.campus-game .map-actions button{min-height:44px;padding-inline:3px;font-size:13px}
+  #find-seat img{width:18px;height:18px}
+  body.campus-game .topbar .brand-copy .place{font-size:11px}
+}
+@media(max-width:370px){
+  body.campus-game .map-actions:has(#find-seat:not([hidden])){flex-direction:column;align-items:end}
+}
+@media(max-height:520px){
+  body.campus-game .topbar,body:not(.campus-game)>header{padding-block:env(safe-area-inset-top,0px) 2px}
+  body.campus-game .bottom-dock,body:not(.campus-game)>footer{padding-block:2px calc(2px + env(safe-area-inset-bottom,0px))}
+}
+
+/* Pixel glyphs include transparent margins. Crop those margins inside the icon
+   slot so a book is as readable as its label without widening touch controls. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.campus-dock .pixel-control{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:48px;padding-inline:7px;white-space:nowrap;
+}
+.campus-dock .pixel-control::before{
+  flex:none;width:26px;height:26px;margin:0;background-size:38px 38px;
+}
+body.campus-game .bottom-dock .ui-icon{
+  flex:none;width:30px;height:30px;object-fit:contain;transform:scale(1.2);
+}
+body>header #place{
+  display:inline-flex;align-items:center;gap:3px;white-space:nowrap;
+  overflow-wrap:normal;line-height:1.25;text-align:start;
+}
+body>header #place::before,body>header #place::after{flex:none;margin-inline:0}
+body>header #place::after{margin-top:4px}
+#quick-jump,.scene-actions #jump{
+  width:max-content;min-width:134px;
+  grid-template-columns:24px auto auto;padding:3px 8px;column-gap:6px;
+}
+#quick-jump .action-detail,.scene-actions #jump .action-detail{max-width:132px}
+#quick-jump .action-verb,.scene-actions #jump .action-verb{white-space:nowrap;line-height:1.4}
+@media(max-width:640px){
+  .campus-dock{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:min(100%,390px);justify-self:center}
+  .campus-dock .pixel-control{width:100%;min-width:0;min-height:46px;padding-inline:3px}
+  .map-hud .play-tools{display:flex;gap:6px}
+  .map-hud .play-tools .pixel-control:not([hidden]){
+    display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;
+    min-height:44px;padding:2px 6px;
+  }
+  .map-hud .play-tools .pixel-control::before{display:block;flex:none;width:22px;height:22px;margin:0}
+  body:not(.campus-game)>footer{row-gap:7px}
+  body.campus-game .bottom-dock{column-gap:5px}
+}
+@media(max-width:760px),(pointer:coarse){
+  #quick-jump,.scene-actions #jump{min-width:115px;grid-template-columns:22px auto;padding:3px 7px}
+}
+@media(max-width:370px){
+  body>header #place::before{display:none}
+  body.campus-game .bottom-dock .dock-button{padding-inline:0;border-width:5px;gap:2px}
+  body.campus-game .bottom-dock .ui-icon{width:27px;height:27px;transform:scale(1.3)}
+  body.campus-game .scene-actions:has(#jump[data-action="은행나무길 가기"]) #run{grid-column:2;grid-row:1}
+}
+@media(max-height:520px) and (orientation:landscape){
+  .campus-dock{width:auto;display:flex;flex:none}
+  .campus-dock .pixel-control{width:auto}
+}
+
+body.campus-game .scene-toolbar{
+  position:absolute;z-index:12;inset:12px 12px auto;display:flex;
+  align-items:start;justify-content:space-between;gap:6px;pointer-events:none;
+}
+body.campus-game .scene-toolbar .scene-chip{position:static;flex:none;pointer-events:auto}
+body.campus-game .scene-toolbar .map-actions{
+  position:static;flex-wrap:wrap;justify-content:end;min-width:0;gap:6px;
+}
+body.campus-game .scene-toolbar .map-actions button{pointer-events:auto}
+body>header #place{padding-inline:3px}
+@media(max-width:640px){
+  body.campus-game .scene-toolbar{inset:10px 8px auto}
+  #viewport:has(#world[data-scene="lounge"]) #scene-label{font-size:0}
+  #viewport:has(#world[data-scene="lounge"]) #scene-label::after{content:"도서관";font-size:13px}
+}

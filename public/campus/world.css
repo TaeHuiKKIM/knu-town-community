@@ -118,3 +118,5 @@ button.entrance-caption:focus-visible{outline:3px solid #ffe6a0;outline-offset:2
 .furniture-seat-desk.seat-of-lecture-desk[data-facing="south"]{background-image:url('/campus/assets/lecture/chair-front.png')}
 .actor.behind-backrest.lecture-chair::after{background-image:url('/campus/assets/lecture/chair-back.png');background-size:36px 56px;height:27px}
 .building-sign{position:absolute;z-index:2;transform:translate(-50%,-50%);pointer-events:none;text-align:center;font:700 19px/1 Galmuri11,Galmuri,sans-serif;letter-spacing:9px;padding:3px 0 3px 9px;color:#e4c27a;background:#6b6d70;text-shadow:0 1px 0 #7a5a1f}
+
+.scene-loader.over-map{position:absolute;inset:auto 12px 12px auto;width:auto;height:auto;max-width:calc(100% - 24px);padding:8px 12px;display:flex;align-items:center;gap:8px;background:#fff9e9;color:#3f3524;border-radius:8px;pointer-events:none}.scene-loader.over-map[hidden]{display:none}.scene-loader.over-map button{pointer-events:auto;margin:0}

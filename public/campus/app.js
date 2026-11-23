@@ -1,5 +1,5 @@
 import { RoomConnection, latestSender, saved, profileKey } from './network.js';
-import { COATS, AVATARS, WORLD, walkable as worldWalkable, cameraTransform, directionFor, normalizeDirection } from './world.js';
+import { COATS, AVATARS, WORLD, walkable as worldWalkable, cameraTransform, directionFor, normalizeDirection, campusKey, campusKeyName, walkKeys } from './world.js';
 import { Avatars } from './avatar.js';
 import { WardrobeUI } from './wardrobe-ui.js';
 import { canWearStyle, styleForAvatar } from './wardrobe.js';
@@ -36,6 +36,7 @@ let seatBusy=false, furnitureScene=null, seatAfterStanding=null, friendSeatTrip=
 const seatButtons=new Map();
 let markedChair=null;
 let localSeats=[],tabNavigation=false;
+const pickerSeats=new Map();
 document.addEventListener('pointerdown',()=>{tabNavigation=false;},true);
 document.addEventListener('keydown',e=>{if(e.key==='Tab')tabNavigation=true;},true);
 function walkable(x,y,scene){return worldWalkable(x,y,scene,snapshot.pondSeating===true);}
@@ -46,6 +47,7 @@ function nearbyAction(){
   return friend?{friend}:null;
 }
 function startWalk(goal,action={}){
+  if(action.gate)sceneView.images.warm(sceneInfo(action.gate.target).image);
   const path=walkingRoute(state,goal,(x,y)=>walkable(x,y,state.scene));
   if(!path.length)return false;
   stopInput();
@@ -74,7 +76,15 @@ function spaceAction(){
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
 const movement=latestSender(data=>room.send({type:'campus-move',...data}),error=>{if(error.status&&!error.stale&&!['STALE_MOVE','KNOCKBACK','STUDY_ACTIVE','SEATED'].includes(error.code))toast(error.message);});
 const ambient=new Ambient($('ambient'),world);
-const sceneView=new SceneView({room,ambient,toast,onWalkToGate:walkToGate,canTravel:()=>!studying()&&!state.knockback&&Date.now()+offset>=state.hitUntil,onBusy:busy=>{if(busy){stopInput();movement.clear();}syncControls();},onShow:()=>{lastTransform='';camera();}});
+let awaitingSceneState=null;
+function onSceneShown(scene){
+  const next=awaitingSceneState;
+  if(next && (next.players.find(p=>p.id===room.me?.id)?.campus.scene || 'plaza')===scene.id){
+    awaitingSceneState=null;accept(next);
+  }
+  lastTransform='';camera();
+}
+const sceneView=new SceneView({room,ambient,toast,confirmArrival,onWalkToGate:walkToGate,canTravel:()=>!studying()&&!state.knockback&&Date.now()+offset>=state.hitUntil,onBusy:busy=>{if(busy){stopInput();movement.clear();}syncControls();},onShow:onSceneShown});
 let localUI, calendarMonth=monthKey(), calendarRequest=0, calendarFriend=null;
 function refreshOwnCalendar(month=calendarMonth){
   calendarMonth=month;
@@ -130,7 +140,7 @@ function schedule(){if(!frameId&&!document.hidden&&!studyUI.focused&&!spaces.hal
 function focusScene(){stopInput();if(frameId)cancelAnimationFrame(frameId);frameId=0;lastTime=performance.now();room.setView(document.hidden||studyUI.focused||spaces.hallPanel.open?'study':'campus');schedule();}
 function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
 function toast(message){const node=$('toast'),host=document.querySelector('dialog[open]')||document.body;host.append(node);node.textContent=message;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.hidden=true,2800);}
-function typing(){return /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);}
+function typing(){const focus=document.activeElement;return focus?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(focus?.tagName);}
 function blocking(){return [...document.querySelectorAll('dialog[open]')].some(d=>d.id!=='chat-dialog'||d.dataset.modal==='true');}
 function actionReady(epoch,gestures=false){
   return room.online&&room.me&&!room.transferring&&sceneView.ready&&!sceneView.busy&&!needsSync
@@ -176,20 +186,44 @@ function syncControls(){
     const occupant=snapshot.players.find(p=>p.campus.furnitureSeat===id);
     button.disabled=!!occupant||!room.online||studying()||seatBusy||!sceneView.ready||sceneView.busy;
     button.dataset.occupied=String(!!occupant);
+    const option=pickerSeats.get(id);
+    if(option){
+      option.disabled=button.disabled;
+      const seatName=option.value.split('-').at(-1)+'번 자리';
+      const status=occupant?' · '+(occupant.id===room.me?.id?'내 자리':occupant.name):'';
+      if(option.text!==seatName+status)option.text=seatName+status;
+    }
     button.title=occupant?`${occupant.name} 님이 앉아 있어요`:button.getAttribute('aria-label');
+  }
+  if(pickerSeats.size){
+    const usable=[...pickerSeats.values()].filter(option=>!option.disabled);
+    if($('seat-options').selectedOptions[0]?.disabled && usable.length)$('seat-options').value=usable[0].value;
+    $('nearest-seat').disabled=!usable.length;
+    $('take-seat').disabled=!usable.length;
   }
   $('playful-toggle').disabled=!room.online||playfulBusy;
   if(!room.online||studying()||sceneView.busy||!sceneView.ready)$('bump').disabled=true;
 }
+// Portals and furniture check distance on the host. Finish any earlier move
+// before recording the feet at the exact approach point.
+async function confirmArrival(){
+  const owner=room.me,{x,y,scene,positionRevision,facing}=state;
+  await movement.whenIdle();
+  if(room.me!==owner || state.scene!==scene || state.positionRevision!==positionRevision)return false;
+  await room.send({type:'campus-move',scene,positionRevision,x,y,facing,motion:'idle'});
+  return room.me===owner && state.scene===scene && state.positionRevision===positionRevision;
+}
 async function chooseFurnitureSeat(id, nextSeat=null) {
   if(seatBusy||!actionReady(Date.now()+offset))return;
+  const owner=room.me, scene=state.scene, positionRevision=state.positionRevision;
   seatBusy=true;
   stopInput();
   seatAfterStanding=nextSeat;
   movement.clear();
   syncControls();
   try {
-    await room.send({type:'furniture-seat',seat:id,scene:state.scene,positionRevision:state.positionRevision});
+    if(id && !await confirmArrival())return;
+    if(room.me===owner)await room.send({type:'furniture-seat',seat:id,scene,positionRevision});
   } catch(error) {
     seatAfterStanding=null;
     if(!error.stale)toast(error.message);
@@ -199,11 +233,46 @@ async function chooseFurnitureSeat(id, nextSeat=null) {
   }
 }
 
+function showSeatChoices(scene) {
+  const picker=$('seat-options');
+  picker.replaceChildren();
+  pickerSeats.clear();
+  $('find-seat').hidden=scene!=='lounge';
+  if(scene!=='lounge')return;
+  for(const item of sceneFurniture(scene)){
+    const group=document.createElement('optgroup');
+    group.label=item.label;
+    for(const [index] of item.seats.entries()){
+      const id=item.id+'-'+(index+1), option=new Option((index+1)+'번 자리',id);
+      group.append(option);
+      pickerSeats.set(id,option);
+    }
+    picker.append(group);
+  }
+}
+function takeListedSeat(seat){
+  if(!seat || !seatButtons.get(seat.id) || seatButtons.get(seat.id).disabled)return;
+  $('seat-dialog').close();
+  viewport.focus({preventScroll:true});
+  approachSeat(seat);
+}
+$('take-seat').onclick=()=>takeListedSeat(localSeats.find(seat=>seat.id===$('seat-options').value));
+$('seat-options').onchange=()=>{$('take-seat').disabled=$('seat-options').selectedOptions[0]?.disabled!==false;};
+$('nearest-seat').onclick=()=>{
+  let closest, distance=Infinity;
+  for(const seat of localSeats){
+    if(seatButtons.get(seat.id)?.disabled)continue;
+    const floor=seatApproach(seat), next=Math.hypot(state.x-floor.x,state.y-floor.y);
+    if(next<distance){closest=seat;distance=next;}
+  }
+  takeListedSeat(closest);
+};
 function drawFurniture(scene) {
   const pondSeating=snapshot.pondSeating===true;
   const layout=scene==='plaza'&&pondSeating?'plaza-with-pond':scene;
   if(furnitureScene===layout)return;
   furnitureScene=layout;
+  showSeatChoices(scene);
   for(const item of world.querySelectorAll('.furniture'))item.remove();
   seatButtons.clear();
   for(const item of sceneFurniture(scene)){
@@ -366,14 +435,21 @@ function renderMessages(){
   if(nearBottom||initialHistory||fresh.some(m=>m.playerId===room.me?.id))list.scrollTop=list.scrollHeight;initialHistory=false;
 }
 function accept(next){
-  snapshot=next;offset=next.at-Date.now();const mine=next.players.find(p=>p.id===room.me?.id);
+  const mine=next.players.find(p=>p.id===room.me?.id);
+  const destination=mine?.campus.scene||'plaza';
+  if(mine && (destination!==sceneView.current || sceneView.requested && sceneView.requested!==destination)){
+    awaitingSceneState=next;
+    if(sceneView.requested!==destination)void sceneView.show(destination);
+    return;
+  }
+  snapshot=next;offset=next.at-Date.now();
   shareCalendar.checked=!!mine?.shareCalendar;
   if(calendarFriend&&!next.players.some(p=>p.id===calendarFriend&&p.shareCalendar)){
     calendarRequest++;
     $('friend-study-calendar').replaceChildren();
     $('friend-calendar-status').textContent='친구가 현재 공부 달력을 공유하지 않아요.';
   }
-  if(mine){const scene=mine.campus.scene||'plaza';if(scene!==state.scene){stopInput();movement.clear();needsSync=true;state.scene=scene;impacts.reset();void sceneView.show(scene);}
+  if(mine){const scene=mine.campus.scene||'plaza';if(scene!==state.scene){stopInput();movement.clear();needsSync=true;state.scene=scene;impacts.reset();}
     const initial=needsSync, seatChanged=state.furnitureSeat!==mine.campus.furnitureSeat;
     const previousSeat=state.furnitureSeat;
     state.furnitureSeat=mine.campus.furnitureSeat;
@@ -509,7 +585,7 @@ room.addEventListener('state',e=>{accept(e.detail);if(location.hash==='#tutor')o
 room.addEventListener('status',e=>{const mode=e.detail,text={online:'연결됨',offline:'다시 연결하는 중',connecting:'연결 중',waiting:'입장 대기'}[mode];$('connection').dataset.mode=mode;$('connection').setAttribute('aria-label',text+' · 연결 상태');$('connection-detail').textContent=text;
   $('connection-banner').hidden=mode==='online'||mode==='waiting';$('connection-banner').textContent=text;
   if(mode!=='online'){stopInput();needsSync=true;movement.clear();}else void studyUI.refresh();$('player').classList.toggle('offline',mode!=='online');syncControls();sceneView.sync();studyUI.renderClock();});
-room.addEventListener('joinrequired',()=>{sceneView.reset();state.scene='plaza';state.furnitureSeat=null;drawFurniture('plaza');void sceneView.show('plaza');snapshot={players:[],messages:[]};impacts.reset();state.knockback=null;state.hitUntil=0;state.positionRevision=0;actors.forEach(a=>a.node.remove());actors.clear();$('player').hidden=true;peopleKey='';messageKey='';initialHistory=true;unread=0;$('unread').hidden=true;lastMessages.clear();renderPeople();renderMessages();document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('join-error').textContent='';$('nickname').value=saved.get('localStorage','knu-name')||'';chooseAvatar(AVATARS.includes(saved.get('localStorage','knu-avatar'))?saved.get('localStorage','knu-avatar'):'male');portraits();syncControls();$('join-dialog').showModal();});
+room.addEventListener('joinrequired',()=>{awaitingSceneState=null;sceneView.reset();state.scene='plaza';state.furnitureSeat=null;drawFurniture('plaza');void sceneView.show('plaza');snapshot={players:[],messages:[]};impacts.reset();state.knockback=null;state.hitUntil=0;state.positionRevision=0;actors.forEach(a=>a.node.remove());actors.clear();$('player').hidden=true;peopleKey='';messageKey='';initialHistory=true;unread=0;$('unread').hidden=true;lastMessages.clear();renderPeople();renderMessages();document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('join-error').textContent='';$('nickname').value=saved.get('localStorage','knu-name')||'';chooseAvatar(AVATARS.includes(saved.get('localStorage','knu-avatar'))?saved.get('localStorage','knu-avatar'):'male');portraits();syncControls();$('join-dialog').showModal();});
 room.addEventListener('resumeerror',()=>{$('connection-banner').hidden=false;$('connection-banner').textContent='연결을 복구하면 자동으로 돌아와요';});
 $('join-form').addEventListener('submit',async e=>{e.preventDefault();if(joinBusy||!art.ready||composing||localUI.stale)return;joinBusy=true;$('join-error').textContent='';const name=$('nickname').value.trim(),avatar=state.avatar;syncControls();
   try{
@@ -604,15 +680,15 @@ viewport.addEventListener('click',e=>{
   }
   startWalk({x,y});
 });
-window.addEventListener('keydown',e=>{if(e.isComposing||composing||e.keyCode===229)return;const key=e.key.toLowerCase();if(key==='escape'){const d=[...document.querySelectorAll('dialog[open]')].at(-1);if(d&&d.id!=='join-dialog'){e.preventDefault();d.close();}return;}if(!room.online||typing()||blocking())return;
-  const tap={w:[0,-1],arrowup:[0,-1],s:[0,1],arrowdown:[0,1],a:[-1,0],arrowleft:[-1,0],d:[1,0],arrowright:[1,0]}[key];
+window.addEventListener('keydown',e=>{if(e.isComposing||composing)return;if(e.key==='Escape'&&e.keyCode!==229){const d=[...document.querySelectorAll('dialog[open]')].at(-1);if(d&&d.id!=='join-dialog'){e.preventDefault();d.close();}return;}const key=campusKey(e);if(!key||!room.online||typing()||blocking())return;
+  const tap=walkKeys.get(key);
   if(tap && e.repeat && (state.target?.seat||state.target?.gate) && !keys.has(key))return;
   if(tap||key==='shift'){if(tap){tabNavigation=false;viewport.focus({preventScroll:true});}e.preventDefault();keys.add(key);if(tap&&!e.repeat&&!seatBusy&&!state.furnitureSeat&&!studying()&&sceneView.ready&&!sceneView.busy&&movementReady(state,Date.now()+offset)){const x=state.x+tap[0]*5,y=state.y+tap[1]*5;if(walkable(x,y,state.scene)){state.x=x;state.y=y;state.target=null;state.facing=directionFor(...tap,state.facing);state.stepUntil=performance.now()+120;}}}
   if(key==='f'&&!(e.ctrlKey||e.metaKey||e.altKey)){e.preventDefault();if(!e.repeat)void bump();}
   if(key==='c'&&!e.repeat&&!(e.ctrlKey||e.metaKey||e.altKey)){e.preventDefault();void playAction('crouch');}
   if((key==='j'||key===' '&&(!tabNavigation||!e.target.closest?.('button,a,summary')))&&!(e.ctrlKey||e.metaKey||e.altKey)){e.preventDefault();if(!e.repeat){if(key==='j'){if(!state.furnitureSeat)void playAction('jump');}else spaceAction();}}
   if(key==='enter'&&e.target.tagName!=='BUTTON'){e.preventDefault();if(!$('chat-dialog').open)openPanel('chat-dialog');else $('chat-input').focus();}});
-window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>{stopInput();publishMovement();});
+window.addEventListener('keyup',e=>keys.delete(campusKeyName(e)));window.addEventListener('blur',()=>{stopInput();publishMovement();});
 document.addEventListener('visibilitychange',()=>{stopInput();publishMovement();focusScene();if(document.visibilityState==='visible'){void room.probe();void studyUI.refresh();}});
 window.addEventListener('online',()=>{if(room.me){room.connect();void room.probe();}else if(room.pendingSession)void room.resume();});window.addEventListener('offline',()=>room.status('offline'));
 window.addEventListener('pagehide',()=>{stopInput();publishMovement();room.source?.close();});window.addEventListener('pageshow',e=>{if(e.persisted&&room.me){room.connect();void room.probe();}});

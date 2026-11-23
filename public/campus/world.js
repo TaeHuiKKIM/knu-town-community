@@ -9,6 +9,26 @@ export const FACINGS = [...DIRECTIONS, 'left', 'right'];
 export const MOTIONS = ['idle', 'walk', 'run'];
 export const WORLD = { width: 1536, height: 1024 };
 
+const physicalKeys = new Map([
+  ['KeyW','w'], ['KeyA','a'], ['KeyS','s'], ['KeyD','d'],
+  ['KeyJ','j'], ['KeyC','c'], ['KeyF','f'], ['Space',' '],
+  ['ShiftLeft','shift'], ['ShiftRight','shift']
+]);
+export const walkKeys = new Map([
+  ['w',[0,-1]], ['arrowup',[0,-1]], ['s',[0,1]], ['arrowdown',[0,1]],
+  ['a',[-1,0]], ['arrowleft',[-1,0]], ['d',[1,0]], ['arrowright',[1,0]]
+]);
+export function campusKeyName(event) {
+  return physicalKeys.get(event.code) ?? event.key?.toLowerCase();
+}
+export function campusKey(event) {
+  const target = event.target;
+  if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
+      target?.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(target?.tagName)) return null;
+  if (event.keyCode === 229 && !physicalKeys.has(event.code)) return null;
+  return campusKeyName(event);
+}
+
 // Same world coordinates are used for local collision and server validation.
 export function walkable(x,y,scene='plaza',pondSeating=true){
   const ground=scene==='plaza'&&!pondSeating?originalPlazaFloor:sceneInfo(scene);
