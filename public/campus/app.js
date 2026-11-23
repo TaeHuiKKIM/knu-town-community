@@ -19,8 +19,10 @@ import {furnitureSeats,sceneFurniture,seatedFeetOffset,seatApproach,seatAtPoint,
 import {dailyStudy,monthKey,renderCalendar} from './study-calendar.js';
 import {LocalVault} from './local-vault.js';
 import {LocalUI} from './local-ui.js';
+import {chatScroll} from './chat-scroll.js';
 
 const $=id=>document.getElementById(id), viewport=$('viewport'), world=$('world');
+const chatHistory=chatScroll($('messages'),$('chat-latest'));
 const legacyKey=profileKey();let vault=null,localOpenError='';
 try{vault=await LocalVault.open({key:legacyKey,initial:{name:saved.get('localStorage','knu-name')||'',avatar:saved.get('localStorage','knu-avatar')||'male',coat:saved.get('localStorage','knu-coat')||'burgundy'}});}catch{localOpenError='브라우저 저장을 열지 못했어요. 광장 이용은 계속할 수 있어요';}
 if(vault){const p=vault.state.profile;for(const [key,value]of Object.entries({'knu-profile-key':p.key,'knu-name':p.name,'knu-avatar':p.avatar,'knu-coat':p.coat}))saved.set('localStorage',key,value);}
@@ -344,7 +346,7 @@ function openPanel(id,opener=document.activeElement){
   if(id==='chat-dialog'){unread=0;$('unread').hidden=true;$('chat-error').textContent='';}
   const modal=id!=='chat-dialog'||innerWidth<761;dialog.dataset.modal=String(modal);if(modal)dialog.showModal();else dialog.show();
   document.querySelectorAll(`[data-open="${id}"]`).forEach(b=>b.setAttribute('aria-expanded','true'));
-  if(id==='chat-dialog'){$('messages').scrollTop=$('messages').scrollHeight;$('chat-input').focus({preventScroll:true});}
+  if(id==='chat-dialog'){chatHistory.restore();$('chat-input').focus({preventScroll:true});}
 }
 for(const d of document.querySelectorAll('dialog'))d.addEventListener('close',()=>{document.querySelectorAll(`[data-open="${d.id}"]`).forEach(b=>b.setAttribute('aria-expanded','false'));const opener=openers.get(d);if(!tabNavigation && room.me && !document.querySelector('dialog[open]'))viewport.focus({preventScroll:true});else if(opener?.isConnected&&!opener.closest('dialog:not([open])'))opener.focus({preventScroll:true});});
 document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
@@ -407,32 +409,43 @@ function renderMessages(){
   const key=snapshot.messages.map(m=>m.id).join(',');if(key===messageKey&&!initialHistory)return;
   const old=new Set(messageKey.split(',')),fresh=snapshot.messages.filter(m=>!old.has(m.id));messageKey=key;lastMessages.clear();for(const m of snapshot.messages)lastMessages.set(m.playerId,m);
   if(!initialHistory&&!$('chat-dialog').open){unread+=fresh.filter(m=>m.playerId!==room.me?.id).length;$('unread').textContent=String(Math.min(99,unread));$('unread').hidden=!unread;}
-  const list=$('messages'),nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<64;list.replaceChildren();
-  if(!snapshot.messages.length)list.append(el('p','chat-empty','친구에게 인사해보세요'));
-  for(const m of snapshot.messages){
-    const row=el('div',`chat-item${m.playerId===room.me?.id?' mine':''}`);
-    const portrait=el('span','chat-portrait'),canvas=el('canvas');
-    portrait.setAttribute('aria-hidden','true');
-    canvas.width=96;
-    canvas.height=128;
-    const sender=m.avatar?m:snapshot.players.find(p=>p.id===m.playerId);
-    if(sender){
-      const appearance={avatar:sender.avatar,coat:sender.coat,style:sender.style,facing:'south'};
-      art.paint(canvas,appearance);
-      if(appearance.style)void art.loadStyle(appearance.style).then(()=>{
-        if(canvas.isConnected)art.paint(canvas,appearance);
-      },()=>{});
-      portrait.append(canvas);
-    }else portrait.textContent=m.name.slice(0,1);
-    const content=el('div','chat-content'),head=el('div','chat-meta');
-    const time=el('time','',new Date(m.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false}));
-    time.dateTime=new Date(m.at).toISOString();
-    head.append(el('strong','',m.name),time);
-    content.append(head,el('p','chat-bubble',m.text));
-    row.append(portrait,content);
-    list.append(row);
-  }
-  if(nearBottom||initialHistory||fresh.some(m=>m.playerId===room.me?.id))list.scrollTop=list.scrollHeight;initialHistory=false;
+  const list=$('messages'),ids=new Set(snapshot.messages.map(m=>m.id));
+  chatHistory.update(()=>{
+    for(const row of Array.from(list.children))if(!ids.has(row.dataset.messageId))row.remove();
+    if(!snapshot.messages.length){list.append(el('p','chat-empty','친구에게 인사해보세요'));return;}
+    const existing=new Map(Array.from(list.children,row=>[row.dataset.messageId,row]));
+    let cursor=list.firstElementChild;
+    for(const m of snapshot.messages){
+      const row=existing.get(m.id)||chatRow(m);
+      if(row!==cursor)list.insertBefore(row,cursor);
+      cursor=row.nextElementSibling;
+    }
+  },initialHistory||fresh.some(m=>m.playerId===room.me?.id));
+  initialHistory=false;
+}
+function chatRow(m){
+  const row=el('div',`chat-item${m.playerId===room.me?.id?' mine':''}`);
+  const portrait=el('span','chat-portrait'),canvas=el('canvas');
+  portrait.setAttribute('aria-hidden','true');
+  canvas.width=96;
+  canvas.height=128;
+  const sender=m.avatar?m:snapshot.players.find(p=>p.id===m.playerId);
+  if(sender){
+    const appearance={avatar:sender.avatar,coat:sender.coat,style:sender.style,facing:'south'};
+    art.paint(canvas,appearance);
+    if(appearance.style)void art.loadStyle(appearance.style).then(()=>{
+      if(canvas.isConnected)art.paint(canvas,appearance);
+    },()=>{});
+    portrait.append(canvas);
+  }else portrait.textContent=m.name.slice(0,1);
+  const content=el('div','chat-content'),head=el('div','chat-meta');
+  const time=el('time','',new Date(m.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false}));
+  time.dateTime=new Date(m.at).toISOString();
+  head.append(el('strong','',m.name),time);
+  content.append(head,el('p','chat-bubble',m.text));
+  row.append(portrait,content);
+  row.dataset.messageId=m.id;
+  return row;
 }
 function accept(next){
   const mine=next.players.find(p=>p.id===room.me?.id);
@@ -664,7 +677,7 @@ $('motion-toggle').checked=!motionPreference.matches;water.setEnabled(!motionPre
 $('power-toggle').checked=powerSave;$('power-toggle').addEventListener('change',e=>{powerSave=e.target.checked;world.classList.toggle('slow-portals',powerSave);saved.set('localStorage','knu-power-save',powerSave?'1':'0');});
 $('leave').addEventListener('click',async()=>{stopInput();try{await room.leave();}catch(error){if(!error.stale)toast('연결이 끊겨 광장에서 나왔어요');}});
 viewport.addEventListener('click',e=>{
-  if(seatBusy||state.furnitureSeat||!room.online||studying()||!sceneView.ready||sceneView.busy||blocking())return;
+  if(seatBusy||!room.online||studying()||!sceneView.ready||sceneView.busy||blocking())return;
   if((e.target!==viewport && !world.contains(e.target)) || e.target.closest('button,dialog'))return;
   const box=viewport.getBoundingClientRect(),x=(e.clientX-box.left-sceneX)/sceneScale,y=(e.clientY-box.top-sceneY)/sceneScale;
   viewport.focus({preventScroll:true});
@@ -673,14 +686,14 @@ viewport.addEventListener('click',e=>{
   const hit=seatAtPoint(state.scene,x,y);
   if(hit){
     const selected=localSeats.find(seat=>seat.id===hit.id);
-    if(!selected)return;
+    if(!selected || selected.id===state.furnitureSeat)return;
     if(seatButtons.get(selected.id)?.dataset.occupied!=='true')approachSeat(selected);
     else toast('이미 다른 사람이 앉아 있어요');
     return;
   }
-  startWalk({x,y});
+  if(!state.furnitureSeat)startWalk({x,y});
 });
-window.addEventListener('keydown',e=>{if(e.isComposing||composing)return;if(e.key==='Escape'&&e.keyCode!==229){const d=[...document.querySelectorAll('dialog[open]')].at(-1);if(d&&d.id!=='join-dialog'){e.preventDefault();d.close();}return;}const key=campusKey(e);if(!key||!room.online||typing()||blocking())return;
+window.addEventListener('keydown',e=>{if(e.isComposing||composing)return;if(e.key==='Escape'&&e.keyCode!==229){const d=[...document.querySelectorAll('dialog[open]')].at(-1);if(d&&d.id!=='join-dialog'){e.preventDefault();d.close();}return;}if(e.target.closest?.('#messages,#chat-latest'))return;const key=campusKey(e);if(!key||!room.online||typing()||blocking())return;
   const tap=walkKeys.get(key);
   if(tap && e.repeat && (state.target?.seat||state.target?.gate) && !keys.has(key))return;
   if(tap||key==='shift'){if(tap){tabNavigation=false;viewport.focus({preventScroll:true});}e.preventDefault();keys.add(key);if(tap&&!e.repeat&&!seatBusy&&!state.furnitureSeat&&!studying()&&sceneView.ready&&!sceneView.busy&&movementReady(state,Date.now()+offset)){const x=state.x+tap[0]*5,y=state.y+tap[1]*5;if(walkable(x,y,state.scene)){state.x=x;state.y=y;state.target=null;state.facing=directionFor(...tap,state.facing);state.stepUntil=performance.now()+120;}}}

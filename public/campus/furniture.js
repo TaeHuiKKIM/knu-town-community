@@ -61,6 +61,7 @@ export function furnitureSeats(scene) {
 
 // Solids are measured on the ground plane at the feet of the illustrated furniture.
 export const furnitureWidths={'lecture-desk':220,desk:136,'long-table':246,'round-table':112,sofa:180,bench:128};
+export const furnitureHeights={'lecture-desk':93,desk:106,'long-table':112,'round-table':95,sofa:89,bench:56};
 function pondBenchDistance(item,x,y){
   const [a,b]=item.seats,dx=b.x-a.x,dy=b.y-a.y;
   const t=Math.max(-.3,Math.min(1.3,((x-a.x)*dx+(y-a.y)*dy)/(dx*dx+dy*dy)));
@@ -144,11 +145,23 @@ export function portalActionLabel(gate){
 export function seatAtPoint(scene,x,y){
   let best=null,distance=Infinity;
   for(const item of sceneFurniture(scene)){
-    const surface=item.kind==='pond-bench'?pondBenchDistance(item,x,y+14)<=17:Math.abs(x-item.x)<=furnitureWidths[item.kind]/2 &&
-      y>=item.y-(item.kind==='bench'?56:68) && y<=item.y+5;
+    const fromFeet=item.y-y, halfWidth=furnitureWidths[item.kind]/2;
+    // The illustration extends above its ground collision box. A round tabletop
+    // has a curved crown; the white lecture desk spans nearly its full width.
+    const height=furnitureHeights[item.kind], top=height-fromFeet;
+    let width=halfWidth;
+    if(fromFeet>68){
+      if(item.kind==='round-table')width=halfWidth*Math.sqrt(Math.max(0,1-((top-38)/38)**2));
+      else if(item.kind==='lecture-desk')width=halfWidth-Math.max(0,10-top/2);
+      else width=halfWidth*.88;
+    }
+    const surface=item.kind==='pond-bench'?pondBenchDistance(item,x,y+14)<=17:
+      fromFeet>=-5 && top>=0 && Math.abs(x-item.x)<=width;
+    const chairHeight=item.kind==='lecture-desk'?56:47;
     item.seats.forEach((seat,index)=>{
       const d=Math.hypot(x-seat.x,y-(seat.y-13));
-      if((surface||d<=32) && d<distance){
+      const chair=seat.chair && Math.abs(x-seat.x)<=18 && y>=seat.y-chairHeight && y<=seat.y;
+      if((surface || chair || d<=32) && d<distance){
         best={item,index,id:item.id+'-'+(index+1)};distance=d;
       }
     });

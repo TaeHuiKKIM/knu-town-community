@@ -46,7 +46,7 @@ body.campus-game .bottom-dock .dock-button span{font-size:14px;font-weight:700;l
 /* The title and body share one paper surface. Keep the earlier pixel frame
    at the outside edge, without a second frame around the title. */
 body.campus-game dialog,#panel{border-width:2px;padding:0}
-dialog{
+dialog,#log{
   --window-title:#f2eadb;--window-ink:#3e342c;
   --scroll-thumb:#786955;--scroll-track:#f4ead7;
 }
@@ -107,21 +107,25 @@ body.campus-game dialog .dialog-head :focus-visible,#panel .panel-head :focus-vi
   outline:2px solid var(--window-ink);outline-offset:-2px;
 }
 /* Native scroll controls preserve wheel, touch, keyboard and system settings. */
-dialog,dialog :where(.dialog-body,#panelbody,.seat-scroll,.messages,.people,.rank-list,.reading-seats,
+#messages,#log{overflow-anchor:none;overscroll-behavior-y:contain;touch-action:pan-y pinch-zoom}
+#messages:focus-visible,#log:focus-visible{outline:2px solid #75563d;outline-offset:-2px}
+#chat-dialog #chat-latest{margin-inline-start:auto;min-height:44px;padding-inline:8px;font-size:13px}
+#chat-latest[hidden]{display:none}
+#log,dialog,dialog :where(.dialog-body,#panelbody,.seat-scroll,.messages,.people,.rank-list,.reading-seats,
                      .local-history,.tutor-log,.tutor-code,textarea){
   scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track);
 }
 @supports not (scrollbar-width:thin){
-  dialog::-webkit-scrollbar,dialog ::-webkit-scrollbar{width:6px;height:6px}
-  dialog::-webkit-scrollbar-track,dialog ::-webkit-scrollbar-track{background:var(--scroll-track)}
-  dialog::-webkit-scrollbar-thumb,dialog ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:3px}
+  #log::-webkit-scrollbar,dialog::-webkit-scrollbar,dialog ::-webkit-scrollbar{width:6px;height:6px}
+  #log::-webkit-scrollbar-track,dialog::-webkit-scrollbar-track,dialog ::-webkit-scrollbar-track{background:var(--scroll-track)}
+  #log::-webkit-scrollbar-thumb,dialog::-webkit-scrollbar-thumb,dialog ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:3px}
 }
 @media(forced-colors:active){
   body.campus-game dialog .dialog-head,#panel .panel-head{
     background:Canvas;color:CanvasText;
   }
   body.campus-game dialog .dialog-head :focus-visible,#panel .panel-head :focus-visible{outline-color:Highlight}
-  dialog,dialog *{scrollbar-width:auto;scrollbar-color:auto}
+  #log,dialog,dialog *{scrollbar-width:auto;scrollbar-color:auto}
 }
 body.campus-game dialog .dialog-body,#panel #panelbody{
   padding:4px var(--panel-gutter) var(--panel-gutter);min-width:0;

@@ -1,11 +1,10 @@
-import {sceneFurniture,furnitureWidths} from "../public/campus/furniture.js";
+import {sceneFurniture,furnitureWidths,furnitureHeights} from "../public/campus/furniture.js";
 
 export const tables=sceneFurniture("lounge").map(item=>({...item,width:furnitureWidths[item.kind]}));
 export const chairs=tables.flatMap(table=>table.seats.map(seat=>({...seat,table})));
 
-const heights={desk:106,"long-table":112,"round-table":95,sofa:89,"lecture-desk":93};
 export function drawFurniture(ctx,t,art){
-  const image=art[t.kind], h=heights[t.kind];
+  const image=art[t.kind], h=furnitureHeights[t.kind];
   if(image.naturalWidth)ctx.drawImage(image,t.x-t.width/2,t.y-h,t.width,h);
 }
 export function drawChair(ctx,c,art,backrestOnly=false){

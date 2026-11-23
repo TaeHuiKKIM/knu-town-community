@@ -35,7 +35,10 @@
       </div>
       <button id="quick-jump" aria-label="점프" aria-keyshortcuts="Space" title="점프 · Space"><img src="/icons/jump.png" alt=""><span class="action-copy"><small class="action-detail" hidden></small><span class="action-verb">점프</span></span><kbd aria-hidden="true">SPACE</kbd></button>
       <div id="stick" aria-hidden="true"><i></i></div>
-      <ol id="log" aria-label="광장 대화" aria-live="polite"></ol>
+      <div class="chat-history">
+        <ol id="log" tabindex="0" aria-label="광장 대화" role="log" aria-relevant="additions"></ol>
+        <button type="button" id="chat-latest" aria-controls="log" hidden>최신 대화</button>
+      </div>
     </main>
     <footer>
       <nav class="campus-dock" aria-label="내 캠퍼스">

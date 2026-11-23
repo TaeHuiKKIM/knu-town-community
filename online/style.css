@@ -83,16 +83,33 @@ canvas {
 #notice:empty {
   display: none;
 }
-#log {
+.chat-history {
   position: absolute;
   bottom: 0;
   left: 8px;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  width:max-content;
+  max-width:min(400px,calc(100% - 96px));
+  max-height:21%;
+  margin:8px 0;
+}
+#log {
   padding: 0;
   list-style: none;
-  max-width: min(400px, 92%);
-  max-height: 21%;
-  overflow: auto;
-  margin: 8px 0;
+  min-height:0;
+  overflow:auto;
+  margin:0;
+}
+.chat-history #chat-latest {
+  position:absolute;
+  left:0;
+  bottom:calc(100% + 3px);
+  min-height:44px;
+  padding:3px 10px;
+  background:#fff6e5;
+  color:#473326;
 }
 #log li {
   background: #fff8e9ee;
@@ -193,7 +210,6 @@ dialog button {
 #quick-jump { position:absolute; bottom:12px; right:12px; display:grid; justify-items:center; align-content:center; min-width:62px; min-height:62px; border-radius:50%; background:#fff7e9f2; font-size:13px; }
 #quick-jump img { width:26px; height:26px; image-rendering:pixelated; }
 #quick-jump[hidden] { display:none; }
-#log { max-width:min(400px,calc(100% - 96px)); }
 
 #gates button{position:absolute;z-index:1;transform:translate(-50%,-50%);padding:0;background:transparent;color:transparent;border:0;box-shadow:none;overflow:hidden;white-space:nowrap;font-size:0}
 #gates button:focus-visible{outline:2px dashed #f7e1a3}
@@ -284,9 +300,9 @@ dialog :focus-visible,.campus-dock :focus-visible{outline:3px solid #6f344c;outl
 @media(pointer:coarse){
  #stick{display:grid;place-items:center;position:absolute;left:max(10px,env(safe-area-inset-left));bottom:12px;width:76px;height:76px;touch-action:none;user-select:none;background:url("/skins/stick-base.png") center/contain no-repeat;image-rendering:pixelated}
  #stick i{width:33px;height:33px;background:url("/skins/stick-cap.png") center/contain no-repeat;pointer-events:none}
- #log{bottom:92px}
+ .chat-history{bottom:92px}
 }
-@media(pointer:coarse) and (max-height:520px){footer{display:flex}#stick{width:60px;height:60px}#log{bottom:76px}}
+@media(pointer:coarse) and (max-height:520px){footer{display:flex}#stick{width:60px;height:60px}.chat-history{bottom:76px}}
 body button,dialog button,dialog summary,#place,#network,.play-tools button,.outfit-cards button{font-family:Pixel,system-ui,sans-serif;font-weight:700;line-height:1.45;word-break:keep-all}
 header strong,header button,.campus-dock button,.study-tabs button,.calendar-heading button,#quick-jump{white-space:nowrap}
 dialog .close,.calendar-heading button{min-width:44px;min-height:44px}

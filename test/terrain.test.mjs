@@ -43,6 +43,15 @@ test('solid furniture in all three scenes can be selected from its illustrated s
   }
 });
 
+test('illustrated desk tops, sofa backs and chair corners select the visible seat',()=>{
+  assert.equal(seatAtPoint('lecture',665,765)?.id,'lecture-west-4-3');
+  assert.equal(seatAtPoint('lecture',695,765)?.id,'lecture-west-4-3');
+  assert.equal(seatAtPoint('lounge',727,632)?.id,'lounge-round-3');
+  assert.equal(seatAtPoint('lounge',453,732)?.id,'lounge-sofa-west-2');
+  assert.equal(seatAtPoint('lecture',695,746),null); // Aisle between rows.
+  assert.equal(seatAtPoint('lounge',707,625),null); // Empty floor outside the chair.
+});
+
 test('all pond benches have independent seats, paved approaches and a route back to the plaza',()=>{
   const seats=furnitureSeats('plaza').filter(s=>s.kind==='pond-bench');
   assert.equal(seats.length,12);

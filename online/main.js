@@ -9,6 +9,7 @@ import {tables,chairs as libraryChairs,drawFurniture,drawChair} from "./lounge.j
 import {showSpaceAction,createPortal,onPortalSurface,drawEntrance, signOffset, signFace, exitCameraX, doorOffset} from "../public/campus/wayfinding.js";
 import { selectStudentFrame, actionInProgress, STUDENT_ACTION, drawStudentSprite, poseInset, CAMPUS_SPRITE_SCALE } from "../public/campus/student-motion.js";
 import { ImageCache } from "../public/campus/scene-images.js";
+import {chatScroll} from "../public/campus/chat-scroll.js";
 import { addInstallOption } from "./install.js";
 import { SCENES, sceneInfo, nearbyPortal, arrivalFrom, canAttendClass } from "../public/campus/scenes.js";
 import { gateRoute } from "./gate-route.js";
@@ -35,6 +36,7 @@ const $ = (id) => document.getElementById(id),
   canvas = $("world"),
   ctx = canvas.getContext("2d");
 const room = new URL(location.href).searchParams.get("room") || "main";
+const chatHistory=chatScroll($("log"),$("chat-latest"));
 const code = /^[a-z0-9-]{1,40}$/.test(room) ? room : "main";
 const meetupRoom=isMeetupInvite(location.href);
 const webMode = meetupRoom || new URL(location.href).searchParams.get("mode") === "web";
@@ -404,14 +406,14 @@ function portrait(p) {
   }
   return images.get(key);
 }
-function log(text) {
+function log(text,follow=false) {
   const li = document.createElement("li");
   li.textContent = text;
   const feed=$("log");
-  const atEnd=feed.scrollHeight-feed.clientHeight-feed.scrollTop<8;
-  feed.append(li);
-  while ($("log").children.length > 25) $("log").firstChild.remove();
-  if(atEnd)feed.scrollTop=feed.scrollHeight;
+  chatHistory.update(()=>{
+    feed.append(li);
+    while(feed.children.length>25)feed.firstElementChild.remove();
+  },follow);
 }
 function syncClassControl(){
   const button=$("class-toggle");
@@ -643,6 +645,19 @@ function paint(now) {
     drawEntrance(ctx,wayfinding,self.scene,gate,opening?.animate&&opening.gate===gate?Math.min(1,(now-opening.start)/280):0,false);
     ctx.restore();
   }
+  // LAN판 .building-sign과 같은 모양: 회색 띠 위 금색 글자(19px, 자간 9px, 아래 1px 그림자).
+  // 생성 그림은 한글을 못 써서 실제 글자를 얹는다.
+  for(const sign of SCENES[self.scene].signs||[]){
+    const letters=Array.from(sign.text);
+    ctx.save();ctx.font="700 19px Pixel, sans-serif";ctx.textBaseline="middle";ctx.textAlign="left";
+    const widths=letters.map(l=>ctx.measureText(l).width),total=widths.reduce((a,w)=>a+w,0)+9*(letters.length-1);
+    ctx.fillStyle="#6b6d70";ctx.fillRect(sign.x-sign.width/2,sign.y-12.5,sign.width,25);
+    for(const [color,dy] of [["#7a5a1f",1],["#e4c27a",0]]){
+      ctx.fillStyle=color;let x=sign.x-total/2;
+      letters.forEach((l,i)=>{ctx.fillText(l,x,sign.y+1+dy);x+=widths[i]+9;});
+    }
+    ctx.restore();
+  }
   const actors = [...peers.values(), self].filter(
     (p) => p.scene === self.scene,
   );
@@ -871,9 +886,10 @@ $("panel").addEventListener("close",()=>{
 onkeydown = (e) => {
   if(e.key==="Tab")tabNavigation=true;
   if(opening)return;
-  if(e.target===$("message") && e.key==="Escape" && !e.isComposing){
+  if((e.target===$("message")||e.target.closest?.(".chat-history")) && e.key==="Escape" && !e.isComposing){
     canvas.focus({preventScroll:true});return;
   }
+  if(e.target.closest?.(".chat-history"))return;
   const key=campusKey(e);
   if(!key || $("panel").open)return;
   if(key==="shift"){
@@ -942,7 +958,7 @@ $("chat").onsubmit = (e) => {
 };
 function postRoomChat(text) {
   mesh.send({t:"chat",text});
-  log(self.name+" · "+text);chatBubble("me",text);
+  log(self.name+" · "+text,true);chatBubble("me",text);
 }
 function panel(mode, title) {
   resetStick();

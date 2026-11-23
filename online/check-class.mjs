@@ -11,7 +11,7 @@ async function participant(name,width) {
   const page=await browser.newPage({viewport:{width,height:844},isMobile:width<600,hasTouch:width<600});
   await page.addInitScript(n=>{
     localStorage.setItem('knu-web-profile',JSON.stringify({name:n,avatar:'female',coat:'navy'}));
-    window.classProbe={poses:[],labels:[]};
+    window.classProbe={poses:[],labels:[],departmentLetters:new Set()};
     function record(p){
       if(p?.t!=='pose')return;
       classProbe.poses.push(p);
@@ -30,6 +30,9 @@ async function participant(name,width) {
     const fill=CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText=function(label,...args){
       if(label.includes('수업중')&&!classProbe.labels.includes(label))classProbe.labels.push(label);
+      if(this.canvas.id==='world' && document.getElementById('landscape').dataset.scene==='it4' && '컴퓨터학부'.includes(label)){
+        for(const letter of label)classProbe.departmentLetters.add(letter);
+      }
       return fill.call(this,label,...args);
     };
   },name);
@@ -86,6 +89,7 @@ async function journey(web){
     await guest.reload();
     await friendStatus(guest,'IT대학 융복합관',true);
     await travel(host,'it4');
+    await host.waitForFunction(()=>[...classProbe.departmentLetters].join('')==='컴퓨터학부');
     await friendStatus(guest,'IT대학 4호관',false);
     assert.equal(await toggle.isVisible(),false);
     await travel(host,'lecture');
