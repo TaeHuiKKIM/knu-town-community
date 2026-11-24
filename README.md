@@ -2,11 +2,15 @@
 
 경북대학교 대구캠퍼스의 일청담 광장에서 친구와 만나고, 중앙도서관에서 함께 공부하는 브라우저 멀티플레이 게임입니다. 한 사람이 노트북에서 방을 열면 같은 네트워크에 있는 참가자는 휴대폰이나 노트북의 브라우저로 들어옵니다.
 
-[웹 광장 들어가기](https://knu-direct-plaza.vercel.app/?mode=web) · [컴퓨터학부·도서관과 모바일 화면](docs/play-screens.md) · [교내망 실험과 측정 결과](docs/network-research.md) · [팀이 함께 반영한 기능](docs/team-contributions.md) · [LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
+[컴퓨터학부·도서관과 모바일 화면](docs/play-screens.md) · [교내망 실험과 측정 결과](docs/network-research.md) · [팀이 함께 반영한 기능](docs/team-contributions.md) · [LAN 통신 키트](https://github.com/TaeHuiKKIM/campus-lan-kit)
 
 ![일청담 광장에서 두 학생이 마주 보고 있다. 본관이 뒤에 있고 오른쪽 연못에는 분수가 솟는다.](docs/images/plaza-game.webp)
 
-웹에서는 **초대 → 모임 만들기**에서 스터디·학과·동아리·과팅 모임을 열 수 있습니다. 친구는 링크를 통해 모임 내용을 보고 참여합니다. 과팅방에서는 첫 대화를 열 질문을 고를 수 있습니다. 자주 방문한다면 **옷장 → 화면 설정 · 문의 → 홈 화면에 추가**로 웹 앱을 설치할 수 있습니다. iPhone Safari에서는 공유 메뉴의 **홈 화면에 추가**를 사용하세요. [모임과 설치](docs/web-entry.md)
+## 웹 광장 바로 시작하기
+
+휴대폰이나 PC에서 [크누타운 웹 광장 들어가기](https://knu-direct-plaza.vercel.app/?mode=web)를 누르세요. 방장 프로그램을 설치할 필요 없이 브라우저에서 시작할 수 있습니다.
+
+**초대 → 모임 만들기**에서 스터디·학과·동아리·과팅 모임을 열 수 있습니다. 친구는 링크를 통해 모임 내용을 보고 참여합니다. 과팅방에서는 첫 대화를 열 질문을 고를 수 있습니다. 자주 방문한다면 **옷장 → 화면 설정 · 문의 → 홈 화면에 추가**로 웹 앱을 설치할 수 있습니다. iPhone Safari에서는 공유 메뉴의 **홈 화면에 추가**를 사용하세요. [모임과 설치](docs/web-entry.md)
 
 ## 친구와 입장하면 이렇게 플레이해요
 
