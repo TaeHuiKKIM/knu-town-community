@@ -31,3 +31,5 @@ IT대학 융복합관 앞마당에서 IT4호관으로 건너간다. 정문 위 *
 | ![간판이 있는 IT4 정문 카드](../design/stage1/assets/previews/it4.png) | ![책상과 의자가 보이는 강의실 카드](../design/stage1/assets/previews/lecture.png) | ![공동 테이블과 소파가 보이는 도서관 카드](../design/stage1/assets/previews/lounge.png) |
 
 게임에서 장소 이동을 열면 이 카드가 보인다. 가구 배치나 간판이 바뀌면 [미리보기 생성 도구](../design/ui-kit/make-scene-previews.py)로 다시 만들 수 있다. 루트와 `online`의 npm 의존성, Chromium, Python의 Pillow를 준비하고 저장소 루트에서 `python design/ui-kit/make-scene-previews.py it4 lecture lounge`를 실행한다.
+
+도서관 공동 책상에서 과목을 기록하고 씨앗으로 코디 상자를 여는 과정은 [LAN 실행 사진 두 장](../README.md#친구와-입장하면-이렇게-플레이해요)에서 확인할 수 있습니다.
